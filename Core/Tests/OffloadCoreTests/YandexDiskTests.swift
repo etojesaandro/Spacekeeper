@@ -25,7 +25,7 @@ struct YandexDiskTests {
     YandexDisk(
       api: YandexApi(token: "t0ken", wire: wire),
       folder: "app:/",
-      disguise: "",
+      disguise: Disguise(suffix: "", exempt: []),
       patience: Patience(tries: 3, pause: .zero)
     )
   }
@@ -35,7 +35,7 @@ struct YandexDiskTests {
     YandexDisk(
       api: YandexApi(token: "t0ken", wire: wire),
       folder: "app:/",
-      disguise: ".offload",
+      disguise: Disguise(suffix: ".offload", exempt: []),
       patience: Patience(tries: 3, pause: .zero)
     )
   }
@@ -90,6 +90,36 @@ struct YandexDiskTests {
           + "?fields=size,md5&path=app:/IMG_0001.MOV",
       ]
     )
+  }
+
+  @Test("uploads a picture under its own name, with no rename, by default")
+  func pictureTravelsPlain() async throws {
+    let wire = ScriptedWire([link, created, details])
+
+    let kept = try await YandexDisk(token: "t0ken", wire: wire).kept(local, as: "IMG_0001.HEIC")
+
+    let asked = await wire.asked()
+    #expect(kept == hello)
+    #expect(
+      asked.map { "\($0.method) \($0.url.absoluteString)" } == [
+        "GET https://cloud-api.yandex.net/v1/disk/resources/upload"
+          + "?overwrite=true&path=app:/IMG_0001.HEIC",
+        "PUT https://uploader.example/put/42",
+        "GET https://cloud-api.yandex.net/v1/disk/resources"
+          + "?fields=size,md5&path=app:/IMG_0001.HEIC",
+      ]
+    )
+  }
+
+  @Test("disguises a video by default")
+  func videoTravelsDisguised() async throws {
+    let wire = ScriptedWire([link, created, details, created, details])
+
+    _ = try await YandexDisk(token: "t0ken", wire: wire).kept(local, as: "IMG_0001.MOV")
+
+    let asked = await wire.asked()
+    #expect(asked[0].url.absoluteString.hasSuffix("path=app:/IMG_0001.MOV.offload"))
+    #expect(asked.count == 5)
   }
 
   @Test("waits for a rename the Disk finishes after it has answered")

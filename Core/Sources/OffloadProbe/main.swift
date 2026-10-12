@@ -33,7 +33,7 @@ let disk =
   ? YandexDisk(
     api: api,
     folder: "app:/",
-    disguise: "",
+    disguise: Disguise(suffix: "", exempt: []),
     patience: Patience(tries: 60, pause: .seconds(2))
   )
   : YandexDisk(api: api)

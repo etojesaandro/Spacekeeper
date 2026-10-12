@@ -9,36 +9,36 @@ import Foundation
 ///
 /// The Disk slows uploads through this API to about 128 KiB/s for videos,
 /// archives and data files, and decides that from the file's extension at
-/// the moment the link is requested. So the file travels under its name
-/// with a neutral extension added, and is renamed once it has arrived.
+/// the moment the link is requested. So such a file travels under a
+/// disguised name and is renamed once it has arrived.
 ///
 /// The Disk also files an upload away after it has answered, so the stored
 /// file may take a moment to appear; reading it back is retried for a while.
 public struct YandexDisk: Cloud {
   private let api: YandexApi
   private let folder: String
-  private let disguise: String
+  private let disguise: Disguise
   private let patience: Patience
 
   /// - Parameters:
   ///   - api: The Disk API of the user.
   ///   - folder: Disk path the files go under, ending with a slash.
-  ///   - disguise: Extension added to the name while the file travels; empty for none.
+  ///   - disguise: Decides the name each file travels under.
   ///   - patience: How long to wait for the Disk to file an upload away.
-  public init(api: YandexApi, folder: String, disguise: String, patience: Patience) {
+  public init(api: YandexApi, folder: String, disguise: Disguise, patience: Patience) {
     self.api = api
     self.folder = folder
     self.disguise = disguise
     self.patience = patience
   }
 
-  /// Stores into the application's own folder, renaming after upload and
-  /// waiting up to two minutes for the file to appear.
+  /// Stores into the application's own folder, disguising what the Disk
+  /// would slow down and waiting up to two minutes for a file to appear.
   public init(api: YandexApi) {
     self.init(
       api: api,
       folder: "app:/",
-      disguise: ".offload",
+      disguise: Disguise(),
       patience: Patience(tries: 60, pause: .seconds(2))
     )
   }
@@ -55,11 +55,12 @@ public struct YandexDisk: Cloud {
 
   public func kept(_ file: URL, as name: String) async throws -> Fingerprint {
     let path = folder + name
+    let travelling = folder + disguise.name(for: name)
     let slot = try await api.answer(
       UploadSlot.self,
       step: "Upload link",
       resource: "disk/resources/upload",
-      query: ["path": path + disguise, "overwrite": "true"]
+      query: ["path": travelling, "overwrite": "true"]
     )
     guard !slot.templated, let target = URL(string: slot.href) else {
       throw UnusableUploadLink(href: slot.href)
@@ -68,12 +69,12 @@ public struct YandexDisk: Cloud {
     guard sent.status == 201 || sent.status == 202 else {
       throw CloudRefusal(step: "Upload", response: sent)
     }
-    if !disguise.isEmpty {
-      _ = try await settled(path + disguise)
+    if travelling != path {
+      _ = try await settled(travelling)
       let moved = try await api.response(
         method: "POST",
         resource: "disk/resources/move",
-        query: ["from": path + disguise, "path": path, "overwrite": "true"]
+        query: ["from": travelling, "path": path, "overwrite": "true"]
       )
       guard moved.status == 201 || moved.status == 202 else {
         throw CloudRefusal(step: "Rename after upload", response: moved)
