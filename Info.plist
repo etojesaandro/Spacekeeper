@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDisplayName</key>
+    <string>Offload</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Offload reads your photos and videos to show which ones take the most space, and removes the ones you move to your cloud.</string>
+</dict>
+</plist>
