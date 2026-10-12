@@ -49,10 +49,16 @@ final class Relocation {
           : "Sent. Waiting for Yandex Disk to confirm"
       )
     }
+    let vigil = Vigil()
+    vigil.begin()
+    defer {
+      vigil.end()
+    }
     do {
+      let api = YandexApi(token: try token.value(), wire: wire)
       try await Offload(
         of: NarratedOriginal(PhotoOriginal(id: item.id, folder: folder), say: say),
-        to: NarratedCloud(YandexDisk(token: try token.value(), wire: wire), say: say)
+        to: NarratedCloud(WithinAllowance(YandexDisk(api: api), api: api), say: say)
       ).run()
       stage = .finished(
         "\(item.name) is on Yandex Disk and in Recently Deleted on this iPhone. "

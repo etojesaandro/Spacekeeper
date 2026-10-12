@@ -12,7 +12,7 @@ struct NarratedOriginal: Original {
   }
 
   func parts() async throws -> [Part] {
-    say("Copying the original out of Photos")
+    say("Preparing the original")
     return try await origin.parts()
   }
 

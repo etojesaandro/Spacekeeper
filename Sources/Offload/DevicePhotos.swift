@@ -49,7 +49,7 @@ struct DevicePhotos: Sendable {
 /// whole file, so this reads two properties that are not part of the public
 /// API. If a future iOS drops them, sizes read as zero and everything counts
 /// as on the device, rather than the app crashing.
-private struct ResourceWeight {
+struct ResourceWeight {
   private let resource: PHAssetResource
 
   init(_ resource: PHAssetResource) {
