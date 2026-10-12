@@ -3,35 +3,25 @@ import SwiftUI
 
 /// The single screen of the app: the library survey, and moving items off the device.
 struct ContentView: View {
-  @ViewState private var survey: Survey
-  @ViewState private var relocation: Relocation
+  private let survey: Survey
+  private let uploads: Uploads
+  private let token: KeychainToken
   @ViewState private var selecting = false
   @ViewState private var chosen: Set<String> = []
   @ViewState private var picked: [MediaItem] = []
   @ViewState private var asking = false
-  private let token: KeychainToken
+  @Environment(\.scenePhase) private var phase
   // The ClientID names the application to Yandex; it is public, not a secret.
   private let signIn = YandexSignIn(client: "3dc12ba965ba42bc81540825932299c0")
 
-  init() {
-    let token = KeychainToken(service: "Offload.YandexDisk")
+  /// - Parameters:
+  ///   - survey: The library survey to show.
+  ///   - uploads: The move of items to Yandex Disk.
+  ///   - token: Where the Yandex Disk token is kept.
+  init(survey: Survey, uploads: Uploads, token: KeychainToken) {
+    self.survey = survey
+    self.uploads = uploads
     self.token = token
-    _survey = ViewState(
-      initialValue: Survey(
-        photos: DevicePhotos(),
-        remembered: RememberedItems(
-          file: FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("library-items-v1.json")
-        )
-      )
-    )
-    // A large upload may sit silent for minutes while the Disk files it away.
-    let patient = URLSessionConfiguration.default
-    patient.timeoutIntervalForRequest = 600
-    patient.timeoutIntervalForResource = 6 * 3600
-    _relocation = ViewState(
-      initialValue: Relocation(token: token, session: URLSession(configuration: patient))
-    )
   }
 
   var body: some View {
@@ -57,28 +47,33 @@ struct ContentView: View {
           }
         }
         .safeAreaInset(edge: .bottom) {
-          if selecting {
-            Button {
-              picked = marked
-            } label: {
-              Text(
-                marked.isEmpty
-                  ? "Nothing selected"
-                  : "Move \(marked.count) · \(size(of: marked))"
-              )
-              .frame(maxWidth: .infinity)
+          VStack(spacing: 0) {
+            if selecting {
+              Button {
+                picked = marked
+              } label: {
+                Text(
+                  marked.isEmpty
+                    ? "Nothing selected"
+                    : "Move \(marked.count) · \(size(of: marked))"
+                )
+                .frame(maxWidth: .infinity)
+              }
+              .buttonStyle(.borderedProminent)
+              .controlSize(.large)
+              .disabled(marked.isEmpty)
+              .padding()
+              .background(.bar)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(marked.isEmpty)
-            .padding()
-            .background(.bar)
+            if !uploads.queue.isEmpty {
+              QueueBar(uploads: uploads)
+            }
           }
         }
     }
     .disabled(working)
     .overlay {
-      if case .working(let headline, let step) = relocation.stage {
+      if case .working(let headline, let step) = uploads.stage {
         VStack(spacing: 12) {
           ProgressView()
           Text(headline)
@@ -96,6 +91,10 @@ struct ContentView: View {
       }
     }
     .sheet(isPresented: $asking) {
+      Task {
+        await uploads.wake()
+      }
+    } content: {
       AccountSheet(token: token, signIn: signIn)
     }
     .confirmationDialog(
@@ -106,21 +105,22 @@ struct ContentView: View {
     ) { items in
       Button("Upload, verify, then delete") {
         Task {
-          survey.forget(await relocation.run(items))
           selecting = false
           chosen = []
+          await uploads.begin(items)
         }
       }
     } message: { items in
       Text(
         "\(items.count == 1 ? items[0].name : "\(items.count) items"), \(size(of: items)). "
-          + "Nothing is deleted from this iPhone until Yandex Disk confirms an identical copy, "
-          + "and iOS will ask you once to confirm the deletion."
+          + "The upload goes on if you leave the app. Nothing is deleted from this iPhone "
+          + "until Yandex Disk confirms an identical copy, and iOS will ask you once to "
+          + "confirm the deletion."
       )
     }
     .alert(
       outcome.title,
-      isPresented: Binding(get: { !outcome.title.isEmpty }, set: { _ in relocation.acknowledge() })
+      isPresented: Binding(get: { !outcome.title.isEmpty }, set: { _ in uploads.acknowledge() })
     ) {
       Button("OK") {}
     } message: {
@@ -128,6 +128,23 @@ struct ContentView: View {
     }
     .task {
       await survey.run()
+    }
+    .task(id: watching) {
+      // The Disk may take a while to show a file, and a lost connection comes back.
+      guard watching else {
+        return
+      }
+      while !Task.isCancelled {
+        try? await Task.sleep(for: .seconds(20))
+        await uploads.tick()
+      }
+    }
+    .onChange(of: phase) { _, now in
+      if now == .active {
+        Task {
+          await uploads.wake()
+        }
+      }
     }
   }
 
@@ -147,7 +164,13 @@ struct ContentView: View {
       }
       .padding()
     case .ranked(let findings):
-      RankingView(findings: findings, shown: 100, selecting: selecting, chosen: $chosen) { item in
+      RankingView(
+        findings: findings,
+        shown: 100,
+        selecting: selecting,
+        chosen: $chosen,
+        away: Set(uploads.queue.map { $0.id })
+      ) { item in
         picked = [item]
       }
     }
@@ -162,15 +185,20 @@ struct ContentView: View {
   }
 
   private var working: Bool {
-    if case .working = relocation.stage {
+    if case .working = uploads.stage {
       return true
     }
     return false
   }
 
+  /// Whether something is travelling while the app is in front.
+  private var watching: Bool {
+    phase == .active && !uploads.travelling().isEmpty
+  }
+
   /// Title and text of the alert that closes a move; an empty title means no alert.
   private var outcome: (title: String, text: String) {
-    if case .done(let title, let text) = relocation.stage {
+    if case .done(let title, let text) = uploads.stage {
       return (title, text)
     }
     return ("", "")

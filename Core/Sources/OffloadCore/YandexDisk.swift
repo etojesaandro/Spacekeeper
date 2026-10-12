@@ -14,7 +14,10 @@ import Foundation
 ///
 /// The Disk also files an upload away after it has answered, so the stored
 /// file may take a moment to appear; reading it back is retried for a while.
-public struct YandexDisk: Cloud {
+///
+/// Besides uploading in one go, it takes a file in separate steps, for
+/// uploads that the system carries out while the app is not running.
+public struct YandexDisk: Cloud, Depot {
   private let api: YandexApi
   private let folder: String
   private let disguise: Disguise
@@ -54,34 +57,72 @@ public struct YandexDisk: Cloud {
   }
 
   public func kept(_ file: URL, as name: String) async throws -> Fingerprint {
+    let door = try await door(for: name, bytes: 0)
+    let sent = try await api.delivery(of: file, method: door.method, to: door.url)
+    guard sent.status == 201 || sent.status == 202 else {
+      throw CloudRefusal(step: "Upload", response: sent)
+    }
     let path = folder + name
     let travelling = folder + disguise.name(for: name)
+    if travelling != path {
+      _ = try await settled(travelling)
+      try await rename(travelling, to: path)
+    }
+    let stored = try await settled(path)
+    return Fingerprint(bytes: stored.size, md5: stored.md5)
+  }
+
+  public func door(for name: String, bytes: Int64) async throws -> Request {
     let slot = try await api.answer(
       UploadSlot.self,
       step: "Upload link",
       resource: "disk/resources/upload",
-      query: ["path": travelling, "overwrite": "true"]
+      query: ["path": folder + disguise.name(for: name), "overwrite": "true"]
     )
     guard !slot.templated, let target = URL(string: slot.href) else {
       throw UnusableUploadLink(href: slot.href)
     }
-    let sent = try await api.delivery(of: file, method: slot.method, to: target)
-    guard sent.status == 201 || sent.status == 202 else {
-      throw CloudRefusal(step: "Upload", response: sent)
+    // Upload links take no token.
+    return Request(method: slot.method, url: target, headers: [:])
+  }
+
+  /// A file that arrived under a disguised name is renamed first, so asking
+  /// again after an interruption picks the filing up where it stopped.
+  public func shelved(_ name: String) async throws -> [Fingerprint] {
+    let path = folder + name
+    let travelling = folder + disguise.name(for: name)
+    if travelling != path, try await !held(travelling).isEmpty {
+      try await rename(travelling, to: path)
+      let stored = try await settled(path)
+      return [Fingerprint(bytes: stored.size, md5: stored.md5)]
     }
-    if travelling != path {
-      _ = try await settled(travelling)
-      let moved = try await api.response(
-        method: "POST",
-        resource: "disk/resources/move",
-        query: ["from": travelling, "path": path, "overwrite": "true"]
-      )
-      guard moved.status == 201 || moved.status == 202 else {
-        throw CloudRefusal(step: "Rename after upload", response: moved)
-      }
+    return try await held(path).map { Fingerprint(bytes: $0.size, md5: $0.md5) }
+  }
+
+  private func rename(_ travelling: String, to path: String) async throws {
+    let moved = try await api.response(
+      method: "POST",
+      resource: "disk/resources/move",
+      query: ["from": travelling, "path": path, "overwrite": "true"]
+    )
+    guard moved.status == 201 || moved.status == 202 else {
+      throw CloudRefusal(step: "Rename after upload", response: moved)
     }
-    let stored = try await settled(path)
-    return Fingerprint(bytes: stored.size, md5: stored.md5)
+  }
+
+  /// What the Disk holds at the path right now; empty when nothing.
+  private func held(_ path: String) async throws -> [StoredFile] {
+    let response = try await api.response(
+      resource: "disk/resources",
+      query: ["path": path, "fields": "size,md5"]
+    )
+    if response.status == 404 {
+      return []
+    }
+    guard response.status == 200 else {
+      throw CloudRefusal(step: "Stored file details", response: response)
+    }
+    return [try JSONDecoder().decode(StoredFile.self, from: response.body)]
   }
 
   /// What the Disk holds at the path, waiting while it is not there yet.
@@ -121,7 +162,7 @@ public struct Patience: Sendable {
 }
 
 /// The Disk issued an upload link this client cannot follow.
-public struct UnusableUploadLink: LocalizedError, CustomStringConvertible {
+public struct UnusableUploadLink: LocalizedError, CustomStringConvertible, Verdict {
   private let href: String
 
   init(href: String) {

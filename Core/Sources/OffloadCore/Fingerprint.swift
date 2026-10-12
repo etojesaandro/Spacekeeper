@@ -1,7 +1,7 @@
 /// Size and MD5 of a file's content.
 ///
 /// Two copies hold the same content when their fingerprints are equal.
-public struct Fingerprint: Equatable, Sendable, CustomStringConvertible {
+public struct Fingerprint: Equatable, Sendable, Codable, CustomStringConvertible {
   private let bytes: Int64
   private let md5: String
 

@@ -232,8 +232,112 @@ struct YandexDiskTests {
     )
     let wire = ScriptedWire([templated])
 
-    await #expect(throws: UnusableUploadLink.self) {
+    let failure = await #expect(throws: UnusableUploadLink.self) {
       try await plain(wire).kept(local, as: "IMG_0001.MOV")
     }
+
+    #expect(failure?.localizedDescription.contains("https://uploader.example/{id}") == true)
+    #expect(failure?.stands() == true)
+  }
+
+  @Test("hands out the upload link as a request that carries no token")
+  func door() async throws {
+    let wire = ScriptedWire([link])
+
+    let door = try await disguised(wire).door(for: "IMG_0001.MOV", bytes: 5)
+
+    let asked = await wire.asked()
+    let expected = URL(string: "https://uploader.example/put/42")!
+    #expect(door == Request(method: "PUT", url: expected, headers: [:]))
+    #expect(
+      asked.map { "\($0.method) \($0.url.absoluteString)" } == [
+        "GET https://cloud-api.yandex.net/v1/disk/resources/upload"
+          + "?overwrite=true&path=app:/IMG_0001.MOV.offload",
+      ]
+    )
+  }
+
+  @Test("tells what it holds under a name")
+  func shelvedPlain() async throws {
+    let wire = ScriptedWire([details])
+
+    let held = try await plain(wire).shelved("IMG_0001.MOV")
+
+    #expect(held == [hello])
+    #expect(await wire.asked().count == 1)
+  }
+
+  @Test("holds nothing under a name it does not know")
+  func shelvedNothing() async throws {
+    let wire = ScriptedWire([missing])
+
+    let held = try await plain(wire).shelved("IMG_0001.MOV")
+
+    #expect(held.isEmpty)
+  }
+
+  @Test("renames a file that arrived in disguise before telling what it holds")
+  func shelvedDisguised() async throws {
+    let wire = ScriptedWire([details, created, details])
+
+    let held = try await disguised(wire).shelved("IMG_0001.MOV")
+
+    let asked = await wire.asked()
+    #expect(held == [hello])
+    #expect(
+      asked.map { "\($0.method) \($0.url.absoluteString)" } == [
+        "GET https://cloud-api.yandex.net/v1/disk/resources"
+          + "?fields=size,md5&path=app:/IMG_0001.MOV.offload",
+        "POST https://cloud-api.yandex.net/v1/disk/resources/move"
+          + "?from=app:/IMG_0001.MOV.offload&overwrite=true&path=app:/IMG_0001.MOV",
+        "GET https://cloud-api.yandex.net/v1/disk/resources"
+          + "?fields=size,md5&path=app:/IMG_0001.MOV",
+      ]
+    )
+  }
+
+  @Test("finds a file whose rename was already done on an earlier look")
+  func shelvedRenamed() async throws {
+    let wire = ScriptedWire([missing, details])
+
+    let held = try await disguised(wire).shelved("IMG_0001.MOV")
+
+    let asked = await wire.asked()
+    #expect(held == [hello])
+    #expect(asked.map { $0.method } == ["GET", "GET"])
+  }
+
+  @Test("holds nothing while a disguised file has not arrived")
+  func shelvedNotArrived() async throws {
+    let wire = ScriptedWire([missing, missing])
+
+    let held = try await disguised(wire).shelved("IMG_0001.MOV")
+
+    #expect(held.isEmpty)
+  }
+
+  @Test("fails rather than guess when asking what it holds is refused")
+  func shelvedRefused() async throws {
+    let wire = ScriptedWire([Response(status: 401, body: Data())])
+
+    let failure = await #expect(throws: CloudRefusal.self) {
+      try await plain(wire).shelved("IMG_0001.MOV")
+    }
+
+    #expect(failure?.stands() == true)
+  }
+
+  @Test(
+    "takes a locked file, a busy or a failing server as passing troubles",
+    arguments: [423, 429, 500, 503]
+  )
+  func passing(status: Int) async throws {
+    let wire = ScriptedWire([Response(status: status, body: Data())])
+
+    let failure = await #expect(throws: CloudRefusal.self) {
+      try await plain(wire).shelved("IMG_0001.MOV")
+    }
+
+    #expect(failure?.stands() == false)
   }
 }

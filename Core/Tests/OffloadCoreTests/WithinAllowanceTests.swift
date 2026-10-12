@@ -4,8 +4,6 @@ import Testing
 
 @Suite("Within the Yandex Disk allowance")
 struct WithinAllowanceTests {
-  private let hello = Fingerprint(bytes: 5, md5: "5d41402abc4b2a76b9719d911017c592")
-
   private func limits(largest: Int, total: Int, used: Int) -> Response {
     Response(
       status: 200,
@@ -15,29 +13,24 @@ struct WithinAllowanceTests {
     )
   }
 
-  @Test("uploads a file that fits both the file limit and the free space")
+  @Test("opens the door for a file that fits both the file limit and the free space")
   func fits() async throws {
-    let scratch = try Scratch(Data("hello".utf8))
-    defer { scratch.remove() }
     let wire = ScriptedWire([limits(largest: 100, total: 1000, used: 10)])
-    let inner = ScriptedCloud([.success(hello)])
+    let inner = ArrangedDepot([:])
 
-    let kept = try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
-      .kept(scratch.file, as: "IMG_0001.HEIC")
+    let door = try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
+      .door(for: "IMG_0001.HEIC", bytes: 5)
 
-    #expect(kept == hello)
-    #expect(await inner.received() == ["IMG_0001.HEIC"])
+    #expect(door.url.absoluteString == "https://uploader.example/1")
+    #expect(await inner.opened() == ["IMG_0001.HEIC"])
   }
 
   @Test("asks the Disk for its limits with the user's token")
   func asksLimits() async throws {
-    let scratch = try Scratch(Data("hello".utf8))
-    defer { scratch.remove() }
     let wire = ScriptedWire([limits(largest: 100, total: 1000, used: 10)])
-    let inner = ScriptedCloud([.success(hello)])
 
-    _ = try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
-      .kept(scratch.file, as: "IMG_0001.HEIC")
+    _ = try await WithinAllowance(ArrangedDepot([:]), api: YandexApi(token: "t0ken", wire: wire))
+      .door(for: "IMG_0001.HEIC", bytes: 5)
 
     let asked = await wire.asked()
     #expect(
@@ -48,75 +41,96 @@ struct WithinAllowanceTests {
     #expect(asked.map { $0.headers["Authorization"] } == ["OAuth t0ken"])
   }
 
-  @Test("refuses a file larger than the Disk accepts, without uploading it")
+  @Test("refuses a file larger than the Disk accepts, without opening a door")
   func tooLarge() async throws {
-    let scratch = try Scratch(Data("hello".utf8))
-    defer { scratch.remove() }
     let wire = ScriptedWire([limits(largest: 4, total: 1000, used: 10)])
-    let inner = ScriptedCloud([])
+    let inner = ArrangedDepot([:])
 
     await #expect(throws: TooLargeForCloud.self) {
       try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
-        .kept(scratch.file, as: "IMG_0001.HEIC")
+        .door(for: "IMG_0001.HEIC", bytes: 5)
     }
 
-    #expect(await inner.received().isEmpty)
+    #expect(await inner.opened().isEmpty)
   }
 
-  @Test("refuses a file the Disk has no room for, without uploading it")
+  @Test("refuses a file the Disk has no room for, without opening a door")
   func noRoom() async throws {
-    let scratch = try Scratch(Data("hello".utf8))
-    defer { scratch.remove() }
     let wire = ScriptedWire([limits(largest: 100, total: 1000, used: 996)])
-    let inner = ScriptedCloud([])
+    let inner = ArrangedDepot([:])
 
     await #expect(throws: CloudFull.self) {
       try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
-        .kept(scratch.file, as: "IMG_0001.HEIC")
+        .door(for: "IMG_0001.HEIC", bytes: 5)
     }
 
-    #expect(await inner.received().isEmpty)
+    #expect(await inner.opened().isEmpty)
   }
 
   @Test("accepts a file that exactly fills the remaining space")
   func exactFit() async throws {
-    let scratch = try Scratch(Data("hello".utf8))
-    defer { scratch.remove() }
     let wire = ScriptedWire([limits(largest: 5, total: 1000, used: 995)])
-    let inner = ScriptedCloud([.success(hello)])
+    let inner = ArrangedDepot([:])
 
-    let kept = try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
-      .kept(scratch.file, as: "IMG_0001.HEIC")
+    _ = try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
+      .door(for: "IMG_0001.HEIC", bytes: 5)
 
-    #expect(kept == hello)
+    #expect(await inner.opened() == ["IMG_0001.HEIC"])
   }
 
-  @Test("uploads anyway when the token may not read the limits")
+  @Test("opens the door anyway when the token may not read the limits")
   func limitsForbidden() async throws {
-    let scratch = try Scratch(Data("hello".utf8))
-    defer { scratch.remove() }
-    let wire = ScriptedWire([Response(status: 403, body: Data(#"{"error":"ForbiddenError"}"#.utf8))])
-    let inner = ScriptedCloud([.success(hello)])
+    let wire = ScriptedWire([
+      Response(status: 403, body: Data(#"{"error":"ForbiddenError"}"#.utf8)),
+    ])
+    let inner = ArrangedDepot([:])
 
-    let kept = try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
-      .kept(scratch.file, as: "IMG_0001.HEIC")
+    _ = try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
+      .door(for: "IMG_0001.HEIC", bytes: 5_000_000_000)
 
-    #expect(kept == hello)
+    #expect(await inner.opened() == ["IMG_0001.HEIC"])
   }
 
   @Test("names the file and explains the limit when refusing")
   func wording() async throws {
-    let scratch = try Scratch(Data(repeating: 7, count: 3000))
-    defer { scratch.remove() }
     let wire = ScriptedWire([limits(largest: 2000, total: 1_000_000, used: 0)])
-    let inner = ScriptedCloud([])
 
     let failure = await #expect(throws: TooLargeForCloud.self) {
-      try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
-        .kept(scratch.file, as: "clip.mov")
+      try await WithinAllowance(
+        ArrangedDepot([:]),
+        api: YandexApi(token: "t0ken", wire: wire)
+      ).door(for: "clip.mov", bytes: 3000)
     }
 
     #expect(failure?.description.hasPrefix("clip.mov is 3") == true)
     #expect(failure?.description.contains("accepts files up to 2") == true)
+  }
+
+  @Test("settles for good, so the file is not sent again and again")
+  func settles() async throws {
+    let wire = ScriptedWire([limits(largest: 4, total: 1000, used: 10)])
+
+    let failure = await #expect(throws: TooLargeForCloud.self) {
+      try await WithinAllowance(
+        ArrangedDepot([:]),
+        api: YandexApi(token: "t0ken", wire: wire)
+      ).door(for: "clip.mov", bytes: 5)
+    }
+
+    #expect(failure?.stands() == true)
+  }
+
+  @Test("passes on what the depot holds without asking for the limits")
+  func shelved() async throws {
+    let hello = Fingerprint(bytes: 5, md5: "5d41402abc4b2a76b9719d911017c592")
+    let wire = ScriptedWire([])
+
+    let held = try await WithinAllowance(
+      ArrangedDepot(["IMG_0001.HEIC": [[hello]]]),
+      api: YandexApi(token: "t0ken", wire: wire)
+    ).shelved("IMG_0001.HEIC")
+
+    #expect(held == [hello])
+    #expect(await wire.asked().isEmpty)
   }
 }

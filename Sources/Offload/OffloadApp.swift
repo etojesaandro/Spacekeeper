@@ -2,9 +2,11 @@ import SwiftUI
 
 @main
 struct OffloadApp: App {
+  @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
+
   var body: some Scene {
     WindowGroup {
-      ContentView()
+      ContentView(survey: delegate.survey, uploads: delegate.uploads, token: delegate.token)
     }
   }
 }

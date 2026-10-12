@@ -1,24 +1,24 @@
 import Foundation
 
-/// A cloud that first checks the file fits what the user's Yandex Disk accepts.
+/// A depot that first checks the file fits what the user's Yandex Disk accepts.
 ///
 /// The Disk limits the size of a single file (1 GB without a paid plan) and,
 /// of course, the space left. Finding that out before the upload saves
 /// sending gigabytes only to be refused. A token that may not read the
 /// account's limits skips the check, and the upload itself then decides.
-public struct WithinAllowance: Cloud {
-  private let origin: any Cloud
+public struct WithinAllowance: Depot {
+  private let origin: any Depot
   private let api: YandexApi
 
   /// - Parameters:
-  ///   - origin: The cloud that does the upload.
+  ///   - origin: The depot that takes the file.
   ///   - api: The Disk API to ask for the limits.
-  public init(_ origin: any Cloud, api: YandexApi) {
+  public init(_ origin: any Depot, api: YandexApi) {
     self.origin = origin
     self.api = api
   }
 
-  public func kept(_ file: URL, as name: String) async throws -> Fingerprint {
+  public func door(for name: String, bytes: Int64) async throws -> Request {
     let limits = try await api.response(
       resource: "disk",
       query: ["fields": "max_file_size,total_space,used_space"]
@@ -26,21 +26,23 @@ public struct WithinAllowance: Cloud {
     if limits.status == 200,
       let allowance = try? JSONDecoder().decode(Allowance.self, from: limits.body)
     {
-      let facts = try FileManager.default.attributesOfItem(atPath: file.path)
-      let size = (facts[.size] as? NSNumber)?.int64Value ?? 0
-      guard size <= allowance.largest else {
-        throw TooLargeForCloud(name: name, size: size, limit: allowance.largest)
+      guard bytes <= allowance.largest else {
+        throw TooLargeForCloud(name: name, size: bytes, limit: allowance.largest)
       }
-      guard size <= allowance.total - allowance.used else {
-        throw CloudFull(name: name, size: size, free: allowance.total - allowance.used)
+      guard bytes <= allowance.total - allowance.used else {
+        throw CloudFull(name: name, size: bytes, free: allowance.total - allowance.used)
       }
     }
-    return try await origin.kept(file, as: name)
+    return try await origin.door(for: name, bytes: bytes)
+  }
+
+  public func shelved(_ name: String) async throws -> [Fingerprint] {
+    try await origin.shelved(name)
   }
 }
 
 /// A file is larger than the cloud account accepts for a single file.
-public struct TooLargeForCloud: LocalizedError, CustomStringConvertible {
+public struct TooLargeForCloud: LocalizedError, CustomStringConvertible, Verdict {
   private let name: String
   private let size: Int64
   private let limit: Int64
@@ -61,7 +63,7 @@ public struct TooLargeForCloud: LocalizedError, CustomStringConvertible {
 }
 
 /// The cloud account has less free space than a file needs.
-public struct CloudFull: LocalizedError, CustomStringConvertible {
+public struct CloudFull: LocalizedError, CustomStringConvertible, Verdict {
   private let name: String
   private let size: Int64
   private let free: Int64

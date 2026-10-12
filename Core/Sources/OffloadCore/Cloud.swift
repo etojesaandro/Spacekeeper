@@ -9,7 +9,7 @@ public protocol Cloud: Sendable {
 }
 
 /// A cloud answered a request with something other than success.
-public struct CloudRefusal: LocalizedError, CustomStringConvertible {
+public struct CloudRefusal: LocalizedError, CustomStringConvertible, Verdict {
   private let step: String
   private let response: Response
 
@@ -25,5 +25,10 @@ public struct CloudRefusal: LocalizedError, CustomStringConvertible {
 
   public var errorDescription: String? {
     description
+  }
+
+  /// A locked file, too many requests or a failing server may answer differently later.
+  public func stands() -> Bool {
+    response.status < 500 && response.status != 423 && response.status != 429
   }
 }
