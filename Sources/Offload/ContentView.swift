@@ -10,6 +10,8 @@ struct ContentView: View {
   @ViewState private var picked: [MediaItem] = []
   @ViewState private var asking = false
   private let token: KeychainToken
+  // The ClientID names the application to Yandex; it is public, not a secret.
+  private let signIn = YandexSignIn(client: "3dc12ba965ba42bc81540825932299c0")
 
   init() {
     let token = KeychainToken(service: "Offload.YandexDisk")
@@ -44,7 +46,7 @@ struct ContentView: View {
             }
           }
           ToolbarItemGroup(placement: .topBarTrailing) {
-            Button("Yandex Disk token", systemImage: "key") {
+            Button("Yandex Disk account", systemImage: "person.crop.circle") {
               asking = true
             }
             Button("Read again", systemImage: "arrow.clockwise") {
@@ -94,7 +96,7 @@ struct ContentView: View {
       }
     }
     .sheet(isPresented: $asking) {
-      TokenSheet(token: token)
+      AccountSheet(token: token, signIn: signIn)
     }
     .confirmationDialog(
       picked.count == 1 ? "Move to Yandex Disk?" : "Move \(picked.count) items to Yandex Disk?",
