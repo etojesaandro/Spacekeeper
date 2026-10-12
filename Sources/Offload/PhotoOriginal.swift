@@ -8,15 +8,16 @@ import os
 ///
 /// A video that is on the device is uploaded straight from the library's own
 /// file, so it needs no extra space. Everything else is first copied into a
-/// folder the caller owns and is expected to delete afterwards.
+/// folder of its own, which is deleted when the original is let go of.
 struct PhotoOriginal: Original {
-  private let id: String
+  fileprivate let id: String
   private let folder: URL
   private let lease: Lease
 
   /// - Parameters:
   ///   - id: PhotoKit local identifier of the asset.
-  ///   - folder: Where files are copied to when they cannot be read in place.
+  ///   - folder: Where files are copied to when they cannot be read in place;
+  ///     it must belong to this original alone.
   init(id: String, folder: URL) {
     self.id = id
     self.folder = folder
@@ -51,13 +52,9 @@ struct PhotoOriginal: Original {
     return parts
   }
 
-  func remove() async throws {
-    let id = self.id
-    try await PHPhotoLibrary.shared().performChanges {
-      PHAssetChangeRequest.deleteAssets(
-        PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil)
-      )
-    }
+  func release() async {
+    lease.drop()
+    try? FileManager.default.removeItem(at: folder)
   }
 
   /// The library's own file of the original video; empty when it cannot be read in place.
@@ -129,6 +126,35 @@ private final class Lease: Sendable {
 
   func hold(_ video: AVURLAsset) {
     held.withLock { $0.append(video) }
+  }
+
+  func drop() {
+    held.withLock { $0.removeAll() }
+  }
+}
+
+/// The photo library as the place originals are removed from.
+///
+/// However many originals it is given, iOS asks the user to confirm once.
+struct PhotoBin: Bin {
+  func discard(_ items: [PhotoOriginal]) async throws {
+    let ids = items.map { $0.id }
+    do {
+      try await PHPhotoLibrary.shared().performChanges {
+        PHAssetChangeRequest.deleteAssets(
+          PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+        )
+      }
+    } catch let error as PHPhotosError where error.code == .userCancelled {
+      throw DeletionDeclined()
+    }
+  }
+}
+
+/// The user answered iOS's question about deleting with "Don't Allow".
+struct DeletionDeclined: LocalizedError {
+  var errorDescription: String? {
+    "you chose not to delete"
   }
 }
 

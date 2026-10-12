@@ -8,8 +8,8 @@ public protocol Original: Sendable {
   /// Its full-quality content as files on disk, ready to upload.
   func parts() async throws -> [Part]
 
-  /// Removes it from the device.
-  func remove() async throws
+  /// Lets go of whatever `parts()` prepared, such as temporary copies.
+  func release() async
 }
 
 /// One file of an original together with the name its copy carries in a cloud.

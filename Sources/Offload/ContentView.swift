@@ -1,17 +1,28 @@
+import OffloadCore
 import SwiftUI
 
 /// The single screen of the app: the library survey, and moving items off the device.
 struct ContentView: View {
   @ViewState private var survey: Survey
   @ViewState private var relocation: Relocation
-  @ViewState private var picked: [LibraryItem] = []
+  @ViewState private var selecting = false
+  @ViewState private var chosen: Set<String> = []
+  @ViewState private var picked: [MediaItem] = []
   @ViewState private var asking = false
   private let token: KeychainToken
 
   init() {
     let token = KeychainToken(service: "Offload.YandexDisk")
     self.token = token
-    _survey = ViewState(initialValue: Survey(photos: DevicePhotos()))
+    _survey = ViewState(
+      initialValue: Survey(
+        photos: DevicePhotos(),
+        remembered: RememberedItems(
+          file: FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("library-items-v1.json")
+        )
+      )
+    )
     // A large upload may sit silent for minutes while the Disk files it away.
     let patient = URLSessionConfiguration.default
     patient.timeoutIntervalForRequest = 600
@@ -26,27 +37,59 @@ struct ContentView: View {
       content
         .navigationTitle("Biggest first")
         .toolbar {
-          Button("Yandex Disk token", systemImage: "key") {
-            asking = true
-          }
-          Button("Read again", systemImage: "arrow.clockwise") {
-            Task {
-              await survey.run()
+          ToolbarItem(placement: .topBarLeading) {
+            Button(selecting ? "Done" : "Select") {
+              selecting.toggle()
+              chosen = []
             }
+          }
+          ToolbarItemGroup(placement: .topBarTrailing) {
+            Button("Yandex Disk token", systemImage: "key") {
+              asking = true
+            }
+            Button("Read again", systemImage: "arrow.clockwise") {
+              Task {
+                await survey.afresh()
+              }
+            }
+          }
+        }
+        .safeAreaInset(edge: .bottom) {
+          if selecting {
+            Button {
+              picked = marked
+            } label: {
+              Text(
+                marked.isEmpty
+                  ? "Nothing selected"
+                  : "Move \(marked.count) · \(size(of: marked))"
+              )
+              .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .disabled(marked.isEmpty)
+            .padding()
+            .background(.bar)
           }
         }
     }
     .disabled(working)
     .overlay {
-      if case .working(let step) = relocation.stage {
+      if case .working(let headline, let step) = relocation.stage {
         VStack(spacing: 12) {
           ProgressView()
+          Text(headline)
+            .font(.subheadline.weight(.semibold))
+            .lineLimit(2)
+            .truncationMode(.middle)
           Text(step)
             .font(.footnote)
-            .multilineTextAlignment(.center)
+            .foregroundStyle(.secondary)
         }
+        .multilineTextAlignment(.center)
         .padding(24)
-        .frame(maxWidth: 280)
+        .frame(maxWidth: 300)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
       }
     }
@@ -54,23 +97,23 @@ struct ContentView: View {
       TokenSheet(token: token)
     }
     .confirmationDialog(
-      "Move to Yandex Disk?",
+      picked.count == 1 ? "Move to Yandex Disk?" : "Move \(picked.count) items to Yandex Disk?",
       isPresented: Binding(get: { !picked.isEmpty }, set: { _ in picked = [] }),
       titleVisibility: .visible,
-      presenting: picked.first
-    ) { item in
+      presenting: picked.isEmpty ? nil : picked
+    ) { items in
       Button("Upload, verify, then delete") {
         Task {
-          if await relocation.run(item) {
-            survey.forget(item)
-          }
+          survey.forget(await relocation.run(items))
+          selecting = false
+          chosen = []
         }
       }
-    } message: { item in
+    } message: { items in
       Text(
-        "\(item.name), \(item.bytes().formatted(.byteCount(style: .file))). "
-          + "It is deleted from this iPhone only after Yandex Disk confirms an identical copy, "
-          + "and iOS will ask you to confirm the deletion."
+        "\(items.count == 1 ? items[0].name : "\(items.count) items"), \(size(of: items)). "
+          + "Nothing is deleted from this iPhone until Yandex Disk confirms an identical copy, "
+          + "and iOS will ask you once to confirm the deletion."
       )
     }
     .alert(
@@ -102,10 +145,18 @@ struct ContentView: View {
       }
       .padding()
     case .ranked(let findings):
-      RankingView(findings: findings, shown: 100) { item in
+      RankingView(findings: findings, shown: 100, selecting: selecting, chosen: $chosen) { item in
         picked = [item]
       }
     }
+  }
+
+  /// The items marked in selection, biggest first.
+  private var marked: [MediaItem] {
+    guard case .ranked(let findings) = survey.stage else {
+      return []
+    }
+    return findings.items.filter { chosen.contains($0.id) }
   }
 
   private var working: Bool {
@@ -117,13 +168,13 @@ struct ContentView: View {
 
   /// Title and text of the alert that closes a move; an empty title means no alert.
   private var outcome: (title: String, text: String) {
-    switch relocation.stage {
-    case .finished(let text):
-      return ("Moved", text)
-    case .failed(let text):
-      return ("Not moved, nothing was deleted", text)
-    case .idle, .working:
-      return ("", "")
+    if case .done(let title, let text) = relocation.stage {
+      return (title, text)
     }
+    return ("", "")
+  }
+
+  private func size(of items: [MediaItem]) -> String {
+    items.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))
   }
 }

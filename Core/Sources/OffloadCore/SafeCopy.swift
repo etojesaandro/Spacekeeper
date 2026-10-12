@@ -1,21 +1,19 @@
 import Foundation
 
-/// Moving one original to a cloud.
-///
-/// The original is removed from the device only after the cloud reports, for
-/// every one of its files, a copy with the same fingerprint; any failure
-/// before that leaves it in place.
-public struct Offload: Sendable {
+/// A copy of one original in a cloud, proven identical file by file.
+public struct SafeCopy: Sendable {
   private let original: any Original
   private let cloud: any Cloud
 
-  public init(of original: any Original, to cloud: any Cloud) {
+  public init(of original: any Original, in cloud: any Cloud) {
     self.original = original
     self.cloud = cloud
   }
 
-  /// Uploads, verifies and then removes the original.
-  public func run() async throws {
+  /// Uploads every file of the original and checks each against what the cloud reports.
+  ///
+  /// Returning without an error means the cloud holds all of it.
+  public func make() async throws {
     let parts = try await original.parts()
     guard !parts.isEmpty else {
       throw NothingToOffload()
@@ -27,7 +25,6 @@ public struct Offload: Sendable {
         throw CopyMismatch(name: part.name, local: local, remote: remote)
       }
     }
-    try await original.remove()
   }
 }
 

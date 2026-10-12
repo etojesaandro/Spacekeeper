@@ -1,4 +1,5 @@
 import Foundation
+import OffloadCore
 import Photos
 
 /// The photo library of this device, read through PhotoKit.
@@ -11,15 +12,30 @@ struct DevicePhotos: Sendable {
 
   /// Reads every photo and video together with its size.
   ///
-  /// - Parameter progress: Told now and then how many items of how many are read.
-  func items(progress: @escaping @Sendable (Int, Int) -> Void) async -> [LibraryItem] {
+  /// Asking PhotoKit for sizes is the slow part, so an item that is already
+  /// known and has not changed since is taken as it is.
+  ///
+  /// - Parameters:
+  ///   - known: Items read earlier, by identifier.
+  ///   - progress: Told now and then how many items of how many are read.
+  func items(
+    known: [String: MediaItem],
+    progress: @escaping @Sendable (Int, Int) -> Void
+  ) async -> [MediaItem] {
     await Task.detached(priority: .userInitiated) {
       let assets = PHAsset.fetchAssets(with: PHFetchOptions())
-      var items: [LibraryItem] = []
+      var items: [MediaItem] = []
       items.reserveCapacity(assets.count)
       for index in 0..<assets.count {
         autoreleasepool {
-          items.append(item(of: assets.object(at: index)))
+          let asset = assets.object(at: index)
+          if let before = known[asset.localIdentifier],
+            before.unchanged(since: asset.modificationDate ?? .distantPast)
+          {
+            items.append(before)
+          } else {
+            items.append(item(of: asset))
+          }
         }
         if index % 100 == 0 {
           progress(index, assets.count)
@@ -29,14 +45,15 @@ struct DevicePhotos: Sendable {
     }.value
   }
 
-  private func item(of asset: PHAsset) -> LibraryItem {
+  private func item(of asset: PHAsset) -> MediaItem {
     let weights = PHAssetResource.assetResources(for: asset).map(ResourceWeight.init)
-    return LibraryItem(
+    return MediaItem(
       id: asset.localIdentifier,
       name: weights.first?.name() ?? asset.localIdentifier,
       video: asset.mediaType == .video,
       seconds: asset.duration,
       created: asset.creationDate ?? .distantPast,
+      modified: asset.modificationDate ?? .distantPast,
       size: weights.reduce(0) { $0 + $1.bytes() },
       local: weights.reduce(0) { $0 + ($1.local() ? $1.bytes() : 0) }
     )

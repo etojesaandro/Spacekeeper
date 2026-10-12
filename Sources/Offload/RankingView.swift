@@ -1,19 +1,35 @@
+import OffloadCore
 import SwiftUI
 
 /// The finished ranking: totals on top, then the biggest items.
+///
+/// Outside selection a tap picks one item; in selection a tap marks or
+/// unmarks it.
 struct RankingView: View {
   private let findings: Survey.Findings
   private let shown: Int
-  private let pick: (LibraryItem) -> Void
+  private let selecting: Bool
+  private let chosen: Binding<Set<String>>
+  private let pick: (MediaItem) -> Void
   @ViewState private var smallest = false
 
   /// - Parameters:
   ///   - findings: What the survey found.
-  ///   - shown: How many of the biggest items to list.
-  ///   - pick: Told which item the user tapped.
-  init(findings: Survey.Findings, shown: Int, pick: @escaping (LibraryItem) -> Void) {
+  ///   - shown: How many items of the chosen end to list.
+  ///   - selecting: Whether taps mark items rather than pick one.
+  ///   - chosen: Identifiers of the marked items.
+  ///   - pick: Told which item the user tapped outside selection.
+  init(
+    findings: Survey.Findings,
+    shown: Int,
+    selecting: Bool,
+    chosen: Binding<Set<String>>,
+    pick: @escaping (MediaItem) -> Void
+  ) {
     self.findings = findings
     self.shown = shown
+    self.selecting = selecting
+    self.chosen = chosen
     self.pick = pick
   }
 
@@ -35,25 +51,53 @@ struct RankingView: View {
         .pickerStyle(.segmented)
         ForEach(listed) { item in
           Button {
-            pick(item)
+            tapped(item)
           } label: {
-            ItemRow(item: item)
+            HStack(spacing: 12) {
+              if selecting {
+                Image(
+                  systemName: chosen.wrappedValue.contains(item.id)
+                    ? "checkmark.circle.fill" : "circle"
+                )
+                .font(.title3)
+                .foregroundStyle(
+                  chosen.wrappedValue.contains(item.id) ? Color.accentColor : Color.secondary
+                )
+              }
+              ItemRow(item: item)
+            }
           }
           .buttonStyle(.plain)
         }
       } header: {
         Text("\(smallest ? "Smallest" : "Biggest") \(min(shown, findings.items.count))")
       } footer: {
-        Text("Tap an item to move it to Yandex Disk.")
+        Text(
+          selecting
+            ? "Tap the items to move, then use the button below."
+            : "Tap an item to move it to Yandex Disk, or use Select for several."
+        )
       }
     }
   }
 
   /// The items of the chosen end of the ranking.
-  private var listed: [LibraryItem] {
+  private var listed: [MediaItem] {
     smallest
       ? Array(findings.items.suffix(shown).reversed())
       : Array(findings.items.prefix(shown))
+  }
+
+  private func tapped(_ item: MediaItem) {
+    guard selecting else {
+      pick(item)
+      return
+    }
+    if chosen.wrappedValue.contains(item.id) {
+      chosen.wrappedValue.remove(item.id)
+    } else {
+      chosen.wrappedValue.insert(item.id)
+    }
   }
 
   private func size(_ bytes: Int64) -> String {
@@ -63,7 +107,7 @@ struct RankingView: View {
 
 /// One line of the ranking.
 private struct ItemRow: View {
-  let item: LibraryItem
+  let item: MediaItem
 
   var body: some View {
     HStack(spacing: 12) {

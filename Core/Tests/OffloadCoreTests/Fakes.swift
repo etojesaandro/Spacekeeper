@@ -67,12 +67,14 @@ actor ScriptedCloud: Cloud {
 
 struct Outage: Error {}
 
-/// An original made of scratch files that records whether it was removed.
+/// An original made of scratch files that records whether it was let go of.
 actor RecordedOriginal: Original {
+  nonisolated let label: String
   private let files: [Part]
   private var gone = false
 
-  init(_ files: [Part]) {
+  init(_ label: String, _ files: [Part]) {
+    self.label = label
     self.files = files
   }
 
@@ -80,11 +82,45 @@ actor RecordedOriginal: Original {
     files
   }
 
-  func remove() async throws {
+  func release() async {
     gone = true
   }
 
-  func removed() -> Bool {
+  func released() -> Bool {
     gone
   }
+}
+
+/// A bin that remembers what it was asked to remove, and can be told to refuse.
+actor RecordedBin: Bin {
+  private let refusing: Bool
+  private var requests: [[String]] = []
+
+  init(refusing: Bool) {
+    self.refusing = refusing
+  }
+
+  func discard(_ items: [RecordedOriginal]) async throws {
+    requests.append(items.map { $0.label })
+    if refusing {
+      throw Refusal()
+    }
+  }
+
+  func asked() -> [[String]] {
+    requests
+  }
+}
+
+struct Refusal: LocalizedError {
+  var errorDescription: String? {
+    "the user declined"
+  }
+}
+
+/// An onlooker that pays no attention.
+struct NoOnlooker: Onlooker {
+  func copying(_ number: Int, of count: Int) {}
+
+  func discarding(_ count: Int) {}
 }
