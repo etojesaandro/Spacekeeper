@@ -17,7 +17,7 @@ import Foundation
 ///
 /// Besides uploading in one go, it takes a file in separate steps, for
 /// uploads that the system carries out while the app is not running.
-public struct YandexDisk: Cloud, Depot {
+public struct YandexDisk: Cloud, Depot, Archive {
   private let api: YandexApi
   private let folder: String
   private let disguise: Disguise
@@ -124,6 +124,112 @@ public struct YandexDisk: Cloud, Depot {
     }
   }
 
+  /// Files still travelling under a disguised name are left out: they are
+  /// uploads in progress, not kept files.
+  public func shelf(_ path: String) async throws -> Shelf {
+    var folders: [String] = []
+    var files: [KeptFile] = []
+    var seen = 0
+    while true {
+      let page = try await api.response(
+        resource: "disk/resources",
+        query: [
+          "path": folder + path,
+          "limit": "500",
+          "offset": "\(seen)",
+          "sort": "name",
+          "preview_size": "S",
+          "preview_crop": "true",
+          "fields": "_embedded.total,_embedded.items.name,_embedded.items.type,"
+            + "_embedded.items.size,_embedded.items.md5,_embedded.items.preview,"
+            + "_embedded.items.custom_properties",
+        ]
+      )
+      guard page.status == 200 else {
+        throw CloudRefusal(step: "List of kept files", response: page)
+      }
+      let listing = try JSONDecoder().decode(Listing.self, from: page.body).embedded
+      for item in listing.items {
+        let below = path.isEmpty ? item.name : "\(path)/\(item.name)"
+        if item.type == "dir" {
+          folders.append(below)
+        } else if !disguise.worn(by: item.name) {
+          files.append(
+            KeptFile(
+              path: below,
+              bytes: item.size ?? 0,
+              print: Fingerprint(bytes: item.size ?? 0, md5: item.md5 ?? ""),
+              made: made(item.properties?["rclone_modified"]?.text ?? ""),
+              preview: (item.preview ?? "").isEmpty
+                ? [] : URL(string: item.preview ?? "").map { [$0] } ?? []
+            )
+          )
+        }
+      }
+      seen += listing.items.count
+      if listing.items.isEmpty || seen >= listing.total {
+        return Shelf(folders: folders, files: files)
+      }
+    }
+  }
+
+  public func thumbnail(of file: KeptFile) async throws -> Data {
+    guard let address = file.preview.first else {
+      throw NoPicture(name: file.name())
+    }
+    return try await image(at: address, of: file)
+  }
+
+  public func picture(of file: KeptFile) async throws -> Data {
+    let facts = try await api.response(
+      resource: "disk/resources",
+      query: ["path": folder + file.id, "fields": "preview", "preview_size": "XL"]
+    )
+    guard facts.status == 200 else {
+      throw CloudRefusal(step: "Picture of a kept file", response: facts)
+    }
+    let preview = try JSONDecoder().decode(Glimpse.self, from: facts.body).preview ?? ""
+    guard let address = URL(string: preview), !preview.isEmpty else {
+      throw NoPicture(name: file.name())
+    }
+    return try await image(at: address, of: file)
+  }
+
+  public func fetched(_ file: KeptFile, into place: URL) async throws {
+    let link = try await api.response(
+      resource: "disk/resources/download",
+      query: ["path": folder + file.id]
+    )
+    guard link.status == 200 else {
+      throw CloudRefusal(step: "Download link", response: link)
+    }
+    let slot = try JSONDecoder().decode(UploadSlot.self, from: link.body)
+    guard !slot.templated, let source = URL(string: slot.href) else {
+      throw UnusableUploadLink(href: slot.href)
+    }
+    let saved = try await api.saved(from: source, to: place)
+    guard saved.status == 200 else {
+      throw CloudRefusal(step: "Download", response: saved)
+    }
+  }
+
+  private func image(at address: URL, of file: KeptFile) async throws -> Data {
+    let shown = try await api.content(at: address)
+    guard shown.status == 200 else {
+      throw CloudRefusal(step: "Picture of \(file.name())", response: shown)
+    }
+    return shown.body
+  }
+
+  /// The moment written as rclone writes it; empty when the text is not one.
+  private func made(_ text: String) -> [Date] {
+    let exact = ISO8601DateFormatter()
+    exact.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    let whole = ISO8601DateFormatter()
+    whole.formatOptions = [.withInternetDateTime]
+    return (exact.date(from: text) ?? whole.date(from: text)).map { [$0] } ?? []
+  }
+
   /// Makes the folders a name leads through, outermost first.
   private func folders(to name: String) async throws {
     var path = folder
@@ -219,6 +325,64 @@ public struct UnusableUploadLink: LocalizedError, CustomStringConvertible, Verdi
   public var errorDescription: String? {
     description
   }
+}
+
+/// The cloud has no picture of a file.
+public struct NoPicture: LocalizedError, CustomStringConvertible {
+  private let name: String
+
+  init(name: String) {
+    self.name = name
+  }
+
+  public var description: String {
+    "Yandex Disk has no picture of \(name)"
+  }
+
+  public var errorDescription: String? {
+    description
+  }
+}
+
+// Decodable requires readable stored properties; these only mirror the API's JSON.
+private struct Listing: Decodable {
+  let embedded: Page
+
+  private enum CodingKeys: String, CodingKey {
+    case embedded = "_embedded"
+  }
+
+  struct Page: Decodable {
+    let total: Int
+    let items: [Item]
+  }
+
+  struct Item: Decodable {
+    let name: String
+    let type: String
+    let size: Int64?
+    let md5: String?
+    let preview: String?
+    let properties: [String: Loose]?
+
+    private enum CodingKeys: String, CodingKey {
+      case name, type, size, md5, preview
+      case properties = "custom_properties"
+    }
+  }
+}
+
+/// A custom property's value, which anyone may have set to anything; only text is read.
+private struct Loose: Decodable {
+  let text: String
+
+  init(from decoder: any Decoder) throws {
+    text = (try? decoder.singleValueContainer().decode(String.self)) ?? ""
+  }
+}
+
+private struct Glimpse: Decodable {
+  let preview: String?
 }
 
 // Decodable requires readable stored properties; these two only mirror the API's JSON.

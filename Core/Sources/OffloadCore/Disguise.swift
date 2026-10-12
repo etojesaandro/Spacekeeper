@@ -30,6 +30,11 @@ public struct Disguise: Sendable {
     )
   }
 
+  /// Whether a name is one a file travels under, rather than its own.
+  public func worn(by name: String) -> Bool {
+    !suffix.isEmpty && name.hasSuffix(suffix)
+  }
+
   /// The name the file with the given name travels under.
   public func name(for name: String) -> String {
     exempt.contains(URL(fileURLWithPath: name).pathExtension.lowercased()) ? name : name + suffix

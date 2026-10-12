@@ -37,6 +37,13 @@ actor ScriptedWire: Wire {
     return script.removeFirst()
   }
 
+  func response(to request: Request, saving file: URL) async throws -> Response {
+    journal.append(request)
+    let answer = script.removeFirst()
+    try answer.body.write(to: file)
+    return Response(status: answer.status, body: Data())
+  }
+
   func asked() -> [Request] {
     journal
   }
@@ -242,5 +249,82 @@ final class Notes: @unchecked Sendable {
     lock.lock()
     defer { lock.unlock() }
     return lines
+  }
+}
+
+/// An archive whose files a test lays out, each with the content a fetch brings back.
+actor ArrangedArchive: Archive {
+  private let shelves: [String: Shelf]
+  private let contents: [String: Data]
+  private var fetches: [String] = []
+
+  /// - Parameters:
+  ///   - shelves: What each folder holds, by path.
+  ///   - contents: What fetching each file brings back, by path.
+  init(shelves: [String: Shelf], contents: [String: Data]) {
+    self.shelves = shelves
+    self.contents = contents
+  }
+
+  func shelf(_ path: String) async throws -> Shelf {
+    shelves[path] ?? Shelf(folders: [], files: [])
+  }
+
+  func thumbnail(of file: KeptFile) async throws -> Data {
+    Data("small \(file.id)".utf8)
+  }
+
+  func picture(of file: KeptFile) async throws -> Data {
+    Data("large \(file.id)".utf8)
+  }
+
+  func fetched(_ file: KeptFile, into place: URL) async throws {
+    fetches.append(file.id)
+    guard let content = contents[file.id] else {
+      throw Outage()
+    }
+    try content.write(to: place)
+  }
+
+  /// Paths of the files fetched, in order.
+  func asked() -> [String] {
+    fetches
+  }
+}
+
+/// A gallery that remembers what it was handed and what the files held at that moment.
+actor RecordedGallery: Gallery {
+  private let refusing: Bool
+  private var taken: [String] = []
+  private var dates: [[Date]] = []
+
+  init(refusing: Bool) {
+    self.refusing = refusing
+  }
+
+  func take(_ parts: [FetchedPart], made: [Date]) async throws {
+    for part in parts {
+      let content = (try? Data(contentsOf: part.file)).map { String(decoding: $0, as: UTF8.self) }
+      taken.append("\(part.role) \(part.name) \(content ?? "missing")")
+    }
+    dates.append(made)
+    if refusing {
+      throw Refusal()
+    }
+  }
+
+  /// What was handed over: the part each file plays, its name and its content.
+  func received() -> [String] {
+    taken
+  }
+
+  func moments() -> [[Date]] {
+    dates
+  }
+}
+
+struct Refusal: LocalizedError {
+  var errorDescription: String? {
+    "the library declined"
   }
 }

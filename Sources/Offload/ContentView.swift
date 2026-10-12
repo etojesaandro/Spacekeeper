@@ -5,12 +5,14 @@ import SwiftUI
 struct ContentView: View {
   private let survey: Survey
   private let uploads: Uploads
+  private let kept: Kept
   private let token: KeychainToken
   @ViewState private var selecting = false
   @ViewState private var chosen: Set<String> = []
   @ViewState private var picked: [MediaItem] = []
   @ViewState private var viewed: [MediaItem] = []
   @ViewState private var asking = false
+  @ViewState private var browsing = false
   @Environment(\.scenePhase) private var phase
   // The ClientID names the application to Yandex; it is public, not a secret.
   private let signIn = YandexSignIn(client: "3dc12ba965ba42bc81540825932299c0")
@@ -18,10 +20,12 @@ struct ContentView: View {
   /// - Parameters:
   ///   - survey: The library survey to show.
   ///   - uploads: The move of items to Yandex Disk.
+  ///   - kept: What Yandex Disk keeps.
   ///   - token: Where the Yandex Disk token is kept.
-  init(survey: Survey, uploads: Uploads, token: KeychainToken) {
+  init(survey: Survey, uploads: Uploads, kept: Kept, token: KeychainToken) {
     self.survey = survey
     self.uploads = uploads
+    self.kept = kept
     self.token = token
   }
 
@@ -37,6 +41,9 @@ struct ContentView: View {
             }
           }
           ToolbarItemGroup(placement: .topBarTrailing) {
+            Button("On Yandex Disk", systemImage: "icloud") {
+              browsing = true
+            }
             Button("Yandex Disk account", systemImage: "person.crop.circle") {
               asking = true
             }
@@ -97,6 +104,13 @@ struct ContentView: View {
       }
     } content: {
       AccountSheet(token: token, signIn: signIn)
+    }
+    .sheet(isPresented: $browsing) {
+      NavigationStack {
+        DiskView(kept: kept, path: "") {
+          browsing = false
+        }
+      }
     }
     .sheet(isPresented: Binding(get: { !viewed.isEmpty }, set: { _ in viewed = [] })) {
       if let item = viewed.first {

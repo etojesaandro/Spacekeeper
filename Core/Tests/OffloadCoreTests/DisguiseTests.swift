@@ -35,4 +35,11 @@ struct DisguiseTests {
   func noExemptions() {
     #expect(Disguise(suffix: ".x", exempt: []).name(for: "IMG_1.JPG") == "IMG_1.JPG.x")
   }
+
+  @Test("knows a name a file travels under from the file's own name")
+  func worn() {
+    #expect(Disguise().worn(by: "IMG_1.MOV.offload"))
+    #expect(!Disguise().worn(by: "IMG_1.MOV"))
+    #expect(!Disguise(suffix: "", exempt: []).worn(by: "IMG_1.MOV"))
+  }
 }

@@ -10,6 +10,10 @@ public protocol Wire: Sendable {
 
   /// Sends a request whose body is streamed from a file on disk.
   func response(to request: Request, sending file: URL) async throws -> Response
+
+  /// Sends a request and writes what comes back into a file, replacing it;
+  /// the response then carries the status and no body.
+  func response(to request: Request, saving file: URL) async throws -> Response
 }
 
 /// An HTTP request reduced to what cloud clients need.

@@ -6,7 +6,12 @@ struct OffloadApp: App {
 
   var body: some Scene {
     WindowGroup {
-      ContentView(survey: delegate.survey, uploads: delegate.uploads, token: delegate.token)
+      ContentView(
+        survey: delegate.survey,
+        uploads: delegate.uploads,
+        kept: delegate.kept,
+        token: delegate.token
+      )
     }
   }
 }

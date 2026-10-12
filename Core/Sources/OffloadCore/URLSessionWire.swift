@@ -27,6 +27,28 @@ public struct URLSessionWire: Wire {
     return try response(body: body, answer: answer)
   }
 
+  public func response(to request: Request, saving file: URL) async throws -> Response {
+    let native = native(request)
+    return try await withCheckedThrowingContinuation { continuation in
+      session.downloadTask(with: native) { fetched, answer, error in
+        // The fetched file is gone once this returns, so it is moved here.
+        continuation.resume(
+          with: Result {
+            if let error {
+              throw error
+            }
+            guard let fetched, let http = answer as? HTTPURLResponse else {
+              throw URLError(.badServerResponse)
+            }
+            try? FileManager.default.removeItem(at: file)
+            try FileManager.default.moveItem(at: fetched, to: file)
+            return Response(status: http.statusCode, body: Data())
+          }
+        )
+      }.resume()
+    }
+  }
+
   private func native(_ request: Request) -> URLRequest {
     var native = URLRequest(url: request.url)
     native.httpMethod = request.method

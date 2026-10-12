@@ -11,10 +11,11 @@ import os
 /// itself and takes no arguments, which is why it builds its own parts.
 @MainActor
 final class AppDelegate: NSObject, UIApplicationDelegate {
-  // The app's scene reads these three to hand them to its views.
+  // The app's scene reads these four to hand them to its views.
   let token: KeychainToken
   let survey: Survey
   let uploads: Uploads
+  let kept: Kept
 
   override init() {
     let token = KeychainToken(service: "Offload.YandexDisk")
@@ -41,8 +42,21 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     let say: @Sendable (String) -> Void = { text in
       log.notice("\(text, privacy: .public)")
     }
+    let (words, pen) = AsyncStream<String>.makeStream()
     self.token = token
     self.survey = survey
+    self.kept = Kept(
+      archive: SignedInDisk(
+        token: token,
+        wire: PatientWire(session: URLSession(configuration: .default)) { text in
+          pen.yield(text)
+        }
+      ),
+      gallery: PhotoGallery(),
+      survey: survey,
+      scratch: FileManager.default.temporaryDirectory.appendingPathComponent("Restore"),
+      words: words
+    )
     self.uploads = Uploads(
       outbox: Outbox(
         manifest: Manifest(file: home.appendingPathComponent("manifest.json")),
@@ -77,6 +91,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     uploads.start()
+    kept.start()
     return true
   }
 

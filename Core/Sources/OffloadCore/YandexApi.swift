@@ -62,6 +62,30 @@ public struct YandexApi: Sendable {
     )
   }
 
+  /// Reads what lies at an address the API handed out.
+  ///
+  /// The token goes along only to Yandex's own hosts, which ask for it
+  /// when they serve previews.
+  func content(at address: URL) async throws -> Response {
+    let host = address.host ?? ""
+    let own = ["yandex.net", "yandex.ru", "yandex.com"].contains { host.hasSuffix(".\($0)") }
+    return try await wire.response(
+      to: Request(
+        method: "GET",
+        url: address,
+        headers: own && address.scheme == "https" ? ["Authorization": "OAuth \(token)"] : [:]
+      )
+    )
+  }
+
+  /// Saves into a file what lies at an address the API handed out; such addresses take no token.
+  func saved(from address: URL, to file: URL) async throws -> Response {
+    try await wire.response(
+      to: Request(method: "GET", url: address, headers: [:]),
+      saving: file
+    )
+  }
+
   /// Sends a file to an address the API handed out; such addresses take no token.
   func delivery(of file: URL, method: String, to target: URL) async throws -> Response {
     try await wire.response(

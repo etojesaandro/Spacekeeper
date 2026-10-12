@@ -32,8 +32,12 @@ struct PatientWire: Wire {
     do {
       let (body, answer) = try await session.data(for: native)
       let response = try response(body: body, answer: answer)
+      let took = Date().timeIntervalSince(started)
       log.notice(
-        "done \(what, privacy: .public) status \(response.status) in \(Date().timeIntervalSince(started), format: .fixed(precision: 1)) s"
+        """
+        done \(what, privacy: .public) status \(response.status) \
+        in \(took, format: .fixed(precision: 1)) s
+        """
       )
       return response
     } catch {
@@ -50,8 +54,8 @@ struct PatientWire: Wire {
   func response(to request: Request, sending file: URL) async throws -> Response {
     let what = "Upload to \(request.url.host() ?? "?")"
     let started = Date()
-    let size = ((try? FileManager.default.attributesOfItem(atPath: file.path))?[.size] as? NSNumber)?
-      .int64Value ?? 0
+    let facts = try? FileManager.default.attributesOfItem(atPath: file.path)
+    let size = (facts?[.size] as? NSNumber)?.int64Value ?? 0
     var native = native(request)
     // The Disk stays silent after the last byte for roughly two minutes per gigabyte.
     native.timeoutInterval = max(600, Double(size) / 1_073_741_824 * 180)
@@ -61,18 +65,89 @@ struct PatientWire: Wire {
     do {
       let (body, answer) = try await session.upload(for: native, fromFile: file, delegate: meter)
       let response = try response(body: body, answer: answer)
+      let took = Date().timeIntervalSince(started)
       log.notice(
-        "done \(what, privacy: .public) status \(response.status) in \(Date().timeIntervalSince(started), format: .fixed(precision: 1)) s"
+        """
+        done \(what, privacy: .public) status \(response.status) \
+        in \(took, format: .fixed(precision: 1)) s
+        """
       )
       return response
     } catch {
+      let (sent, why) = (meter.summary(), error.localizedDescription)
       log.error(
-        "failed \(what, privacy: .public), \(meter.summary(), privacy: .public): \(error.localizedDescription, privacy: .public)"
+        "failed \(what, privacy: .public), \(sent, privacy: .public): \(why, privacy: .public)"
       )
       throw TransferFailure(
         what: what,
         seconds: Date().timeIntervalSince(started),
         progress: meter.summary(),
+        cause: error
+      )
+    }
+  }
+
+  func response(to request: Request, saving file: URL) async throws -> Response {
+    let what = "Download from \(request.url.host() ?? "?")"
+    let started = Date()
+    var native = native(request)
+    native.timeoutInterval = 600
+    let flight = Flight()
+    say("Connecting to \(request.url.host() ?? "Yandex Disk")")
+    log.notice("start \(what, privacy: .public)")
+    // A download reports no progress to those who wait for it, so it is asked now and then.
+    let say = say
+    let ticker = Task {
+      while !Task.isCancelled {
+        try? await Task.sleep(for: .milliseconds(500))
+        let (got, all) = flight.progress()
+        if all > 0 {
+          say(
+            "Downloading: \(got.formatted(.byteCount(style: .file))) of "
+              + "\(all.formatted(.byteCount(style: .file)))"
+          )
+        }
+      }
+    }
+    defer {
+      ticker.cancel()
+    }
+    do {
+      let session = session
+      let response: Response = try await withCheckedThrowingContinuation { continuation in
+        let task = session.downloadTask(with: native) { fetched, answer, error in
+          // The fetched file is gone once this returns, so it is moved here.
+          continuation.resume(
+            with: Result {
+              if let error {
+                throw error
+              }
+              guard let fetched, let http = answer as? HTTPURLResponse else {
+                throw URLError(.badServerResponse)
+              }
+              try? FileManager.default.removeItem(at: file)
+              try FileManager.default.moveItem(at: fetched, to: file)
+              return Response(status: http.statusCode, body: Data())
+            }
+          )
+        }
+        flight.hold(task)
+        task.resume()
+      }
+      let took = Date().timeIntervalSince(started)
+      log.notice(
+        """
+        done \(what, privacy: .public) status \(response.status) \
+        in \(took, format: .fixed(precision: 1)) s
+        """
+      )
+      return response
+    } catch {
+      log.error("failed \(what, privacy: .public): \(error.localizedDescription, privacy: .public)")
+      throw TransferFailure(
+        what: what,
+        seconds: Date().timeIntervalSince(started),
+        progress: "",
         cause: error
       )
     }
@@ -116,6 +191,22 @@ struct TransferFailure: LocalizedError {
     "\(what) failed after \(Int(seconds.rounded())) s"
       + (progress.isEmpty ? "" : ", \(progress)")
       + ": \(cause.localizedDescription)"
+  }
+}
+
+/// The task of one download, kept so its progress can be asked for.
+private final class Flight: Sendable {
+  private let tasks = OSAllocatedUnfairLock(initialState: [URLSessionTask]())
+
+  func hold(_ task: URLSessionTask) {
+    tasks.withLock { $0.append(task) }
+  }
+
+  /// Bytes received so far and bytes expected; zeros before the download has begun.
+  func progress() -> (Int64, Int64) {
+    tasks.withLock { tasks in
+      tasks.first.map { ($0.countOfBytesReceived, $0.countOfBytesExpectedToReceive) } ?? (0, 0)
+    }
   }
 }
 
