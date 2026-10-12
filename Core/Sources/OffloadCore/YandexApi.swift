@@ -41,18 +41,25 @@ public struct YandexApi: Sendable {
     )
   }
 
-  /// Asks the API a question that must succeed and decodes the answer.
-  func answer<Body: Decodable>(
-    _ body: Body.Type,
-    step: String,
+  /// Sends the API a request with a JSON body and returns its answer whatever the status.
+  func response(
+    method: String,
     resource: String,
-    query: [String: String]
-  ) async throws -> Body {
-    let response = try await response(resource: resource, query: query)
-    guard response.status == 200 else {
-      throw CloudRefusal(step: step, response: response)
-    }
-    return try JSONDecoder().decode(body, from: response.body)
+    query: [String: String],
+    json: Data
+  ) async throws -> Response {
+    try await wire.response(
+      to: Request(
+        method: method,
+        url: address(resource: resource, query: query),
+        headers: [
+          "Authorization": "OAuth \(token)",
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        ],
+        body: json
+      )
+    )
   }
 
   /// Sends a file to an address the API handed out; such addresses take no token.

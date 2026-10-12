@@ -9,6 +9,7 @@ struct ContentView: View {
   @ViewState private var selecting = false
   @ViewState private var chosen: Set<String> = []
   @ViewState private var picked: [MediaItem] = []
+  @ViewState private var viewed: [MediaItem] = []
   @ViewState private var asking = false
   @Environment(\.scenePhase) private var phase
   // The ClientID names the application to Yandex; it is public, not a secret.
@@ -27,7 +28,7 @@ struct ContentView: View {
   var body: some View {
     NavigationStack {
       content
-        .navigationTitle("Biggest first")
+        .navigationTitle("Offload")
         .toolbar {
           ToolbarItem(placement: .topBarLeading) {
             Button(selecting ? "Done" : "Select") {
@@ -96,6 +97,15 @@ struct ContentView: View {
       }
     } content: {
       AccountSheet(token: token, signIn: signIn)
+    }
+    .sheet(isPresented: Binding(get: { !viewed.isEmpty }, set: { _ in viewed = [] })) {
+      if let item = viewed.first {
+        Closeup(item: item, away: uploads.queue.contains { $0.id == item.id }) {
+          Task {
+            await uploads.begin([item])
+          }
+        }
+      }
     }
     .confirmationDialog(
       picked.count == 1 ? "Move to Yandex Disk?" : "Move \(picked.count) items to Yandex Disk?",
@@ -166,12 +176,13 @@ struct ContentView: View {
     case .ranked(let findings):
       RankingView(
         findings: findings,
-        shown: 100,
         selecting: selecting,
         chosen: $chosen,
         away: Set(uploads.queue.map { $0.id })
-      ) { item in
-        picked = [item]
+      ) { period, order in
+        survey.arrange(for: period, by: order)
+      } pick: { item in
+        viewed = [item]
       }
     }
   }

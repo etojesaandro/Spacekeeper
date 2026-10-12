@@ -29,7 +29,8 @@ struct OutboxTests {
         name: name,
         file: "\(folder)/\(name)",
         bytes: 5,
-        print: Fingerprint(bytes: 5, md5: "5d41402abc4b2a76b9719d911017c592")
+        print: Fingerprint(bytes: 5, md5: "5d41402abc4b2a76b9719d911017c592"),
+        taken: Date(timeIntervalSince1970: 1_741_600_072)
       )
     }
 
@@ -174,6 +175,84 @@ struct OutboxTests {
     await outbox.landed("A.MOV", status: 201)
 
     #expect(await outbox.consignments().map { $0.standing() } == [.safe])
+  }
+
+  @Test("notes on the proven copy when the original was made")
+  func dates() async throws {
+    let desk = Desk()
+    defer { desk.remove() }
+    let depot = ArrangedDepot(["A.MOV": [[hello]]])
+    let transit = RecordedTransit()
+    let outbox = outbox(desk, depot, transit)
+    try await outbox.accept(try desk.consignment("a", ["A.MOV"]))
+
+    await transit.end("A.MOV")
+    await outbox.landed("A.MOV", status: 201)
+
+    #expect(await depot.noted() == ["A.MOV 1741600072"])
+  }
+
+  @Test("notes no date on a copy that is not proven identical")
+  func noDateOnMismatch() async throws {
+    let desk = Desk()
+    defer { desk.remove() }
+    let depot = ArrangedDepot(["A.MOV": [[other]]])
+    let transit = RecordedTransit()
+    let outbox = outbox(desk, depot, transit)
+    try await outbox.accept(try desk.consignment("a", ["A.MOV"]))
+
+    await transit.end("A.MOV")
+    await outbox.landed("A.MOV", status: 201)
+
+    #expect(await depot.noted().isEmpty)
+  }
+
+  @Test("tries again to note the date after a passing trouble, before counting the file safe")
+  func dateLater() async throws {
+    let desk = Desk()
+    defer { desk.remove() }
+    let depot = ArrangedDepot(["A.MOV": [[hello]]], troubles: [], smudges: [Outage()])
+    let transit = RecordedTransit()
+    let outbox = outbox(desk, depot, transit)
+    try await outbox.accept(try desk.consignment("a", ["A.MOV"]))
+    await transit.end("A.MOV")
+
+    await outbox.landed("A.MOV", status: 201)
+    let waiting = await outbox.consignments()[0].standing()
+    await outbox.advance()
+
+    #expect(waiting == .travelling)
+    #expect(await depot.noted() == ["A.MOV 1741600072"])
+    #expect(await transit.sent().count == 1)
+    #expect(await outbox.consignments().map { $0.standing() } == [.safe])
+  }
+
+  @Test("counts an identical copy as safe even when the cloud refuses to note its date")
+  func dateRefused() async throws {
+    let desk = Desk()
+    defer { desk.remove() }
+    let depot = ArrangedDepot(["A.MOV": [[hello]]], troubles: [], smudges: [Ban()])
+    let transit = RecordedTransit()
+    let outbox = outbox(desk, depot, transit)
+    try await outbox.accept(try desk.consignment("a", ["A.MOV"]))
+
+    await transit.end("A.MOV")
+    await outbox.landed("A.MOV", status: 201)
+
+    #expect(await outbox.consignments().map { $0.standing() } == [.safe])
+  }
+
+  @Test("notes the date as well on a file found safe after a relaunch")
+  func dateAfterRelaunch() async throws {
+    let desk = Desk()
+    defer { desk.remove() }
+    try await outbox(desk, ArrangedDepot([:]), RecordedTransit())
+      .accept(try desk.consignment("a", ["A.MOV"]))
+    let depot = ArrangedDepot(["A.MOV": [[hello]]])
+
+    await outbox(desk, depot, RecordedTransit()).advance()
+
+    #expect(await depot.noted() == ["A.MOV 1741600072"])
   }
 
   @Test("keeps an original travelling until every one of its files is safe")
@@ -682,6 +761,16 @@ struct ConsignmentTests {
     )
   }
 
+  private func parcel(_ name: String, _ bytes: Int64) -> Parcel {
+    Parcel(
+      name: name,
+      file: "f/\(name)",
+      bytes: bytes,
+      print: hello,
+      taken: Date(timeIntervalSince1970: 1)
+    )
+  }
+
   @Test("cannot be made of no files, as nothing would back the original up")
   func empty() {
     let failure = #expect(throws: NothingToOffload.self) {
@@ -697,8 +786,8 @@ struct ConsignmentTests {
       item: item(),
       stamp: Date(timeIntervalSince1970: 2),
       parcels: [
-        Parcel(name: "A.HEIC", file: "f/A.HEIC", bytes: 10, print: hello),
-        Parcel(name: "A.MOV", file: "f/A.MOV", bytes: 20, print: hello),
+        parcel("A.HEIC", 10),
+        parcel("A.MOV", 20),
       ]
     )
 
@@ -711,7 +800,7 @@ struct ConsignmentTests {
     let consignment = try Consignment(
       item: item(),
       stamp: Date(timeIntervalSince1970: 2),
-      parcels: [Parcel(name: "A.MOV", file: "f/A.MOV", bytes: 20, print: hello)]
+      parcels: [parcel("A.MOV", 20)]
     )
 
     #expect(consignment.gone(sent: ["A.MOV": 15]) == 0)
@@ -722,7 +811,7 @@ struct ConsignmentTests {
     let consignment = try Consignment(
       item: item(),
       stamp: Date(timeIntervalSince1970: 2),
-      parcels: [Parcel(name: "A.MOV", file: "f/A.MOV", bytes: 20, print: hello)]
+      parcels: [parcel("A.MOV", 20)]
     )
 
     #expect(consignment.unchanged(since: Date(timeIntervalSince1970: 2)))

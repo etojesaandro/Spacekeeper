@@ -17,10 +17,31 @@ final class Survey {
 
   /// What a finished survey found.
   struct Findings {
+    /// Every item of the library, biggest first.
     let items: [MediaItem]
     let total: Int64
     let onDevice: Int64
     let seconds: Double
+    /// The years and months the items come from.
+    let spans: [Span]
+    let period: Period
+    let order: Order
+    /// The items of the chosen period, in the chosen order.
+    let listed: [MediaItem]
+
+    /// The same findings listed for another period, in another order.
+    func arranged(for period: Period, by order: Order) -> Findings {
+      Findings(
+        items: items,
+        total: total,
+        onDevice: onDevice,
+        seconds: seconds,
+        spans: spans,
+        period: period,
+        order: order,
+        listed: Almanac(items, calendar: .current).items(of: period, by: order)
+      )
+    }
   }
 
   private(set) var stage = Stage.waiting
@@ -56,14 +77,40 @@ final class Survey {
       return
     }
     let left = Set(gone.map { $0.id })
-    let ranking = BiggestFirst(findings.items.filter { !left.contains($0.id) })
     stage = .ranked(
-      Findings(
-        items: ranking.ranked(),
-        total: ranking.total(),
-        onDevice: ranking.onDevice(),
-        seconds: findings.seconds
+      found(
+        findings.items.filter { !left.contains($0.id) },
+        seconds: findings.seconds,
+        period: findings.period,
+        order: findings.order
       )
+    )
+  }
+
+  /// Lists the items of a period, in an order.
+  func arrange(for period: Period, by order: Order) {
+    if case .ranked(let findings) = stage {
+      stage = .ranked(findings.arranged(for: period, by: order))
+    }
+  }
+
+  private func found(
+    _ items: [MediaItem],
+    seconds: Double,
+    period: Period,
+    order: Order
+  ) -> Findings {
+    let ranking = BiggestFirst(items)
+    let almanac = Almanac(items, calendar: .current)
+    return Findings(
+      items: ranking.ranked(),
+      total: ranking.total(),
+      onDevice: ranking.onDevice(),
+      seconds: seconds,
+      spans: almanac.spans(),
+      period: period,
+      order: order,
+      listed: almanac.items(of: period, by: order)
     )
   }
 
@@ -72,6 +119,12 @@ final class Survey {
       stage = .refused
       return
     }
+    // Reading again keeps the period and the order the user has chosen.
+    var period = Period.always
+    var order = Order.biggest
+    if case .ranked(let before) = stage {
+      (period, order) = (before.period, before.order)
+    }
     stage = .reading(done: 0, of: 0)
     let started = Date()
     let items = await photos.items(known: known) { done, of in
@@ -79,18 +132,11 @@ final class Survey {
         self.noted(done: done, of: of)
       }
     }
-    let ranking = BiggestFirst(items)
     let seconds = Date().timeIntervalSince(started)
-    stage = .ranked(
-      Findings(
-        items: ranking.ranked(),
-        total: ranking.total(),
-        onDevice: ranking.onDevice(),
-        seconds: seconds
-      )
-    )
+    stage = .ranked(found(items, seconds: seconds, period: period, order: order))
+    let same = items.filter { known[$0.id] == $0 }.count
     Logger(subsystem: "Offload", category: "survey").notice(
-      "read \(items.count) items in \(seconds, format: .fixed(precision: 1)) s, \(items.filter { known[$0.id] == $0 }.count) remembered"
+      "read \(items.count) items in \(seconds, format: .fixed(precision: 1)) s, \(same) remembered"
     )
     let remembered = self.remembered
     Task.detached(priority: .utility) {

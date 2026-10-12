@@ -340,4 +340,119 @@ struct YandexDiskTests {
 
     #expect(failure?.stands() == false)
   }
+
+  @Test("makes the folders a name leads through when the Disk misses them")
+  func makesFolders() async throws {
+    let noFolder = Response(status: 409, body: Data(#"{"error":"DiskPathDoesntExistsError"}"#.utf8))
+    let exists = Response(
+      status: 409,
+      body: Data(#"{"error":"DiskPathPointsToExistentDirectoryError"}"#.utf8)
+    )
+    let wire = ScriptedWire([noFolder, exists, created, link])
+
+    let door = try await plain(wire).door(for: "2025/03/IMG_0001.MOV", bytes: 5)
+
+    let asked = await wire.asked()
+    #expect(door.url.absoluteString == "https://uploader.example/put/42")
+    #expect(
+      asked.map { "\($0.method) \($0.url.absoluteString)" } == [
+        "GET https://cloud-api.yandex.net/v1/disk/resources/upload"
+          + "?overwrite=true&path=app:/2025/03/IMG_0001.MOV",
+        "PUT https://cloud-api.yandex.net/v1/disk/resources?path=app:/2025",
+        "PUT https://cloud-api.yandex.net/v1/disk/resources?path=app:/2025/03",
+        "GET https://cloud-api.yandex.net/v1/disk/resources/upload"
+          + "?overwrite=true&path=app:/2025/03/IMG_0001.MOV",
+      ]
+    )
+  }
+
+  @Test("makes the folders as well when the Disk reports them as not found")
+  func makesFoldersOnNotFound() async throws {
+    let wire = ScriptedWire([missing, created, created, link])
+
+    _ = try await plain(wire).door(for: "2025/03/IMG_0001.MOV", bytes: 5)
+
+    #expect(await wire.asked().map { $0.method } == ["GET", "PUT", "PUT", "GET"])
+  }
+
+  @Test("makes no folders when the Disk has them already")
+  func foldersThere() async throws {
+    let wire = ScriptedWire([link])
+
+    _ = try await plain(wire).door(for: "2025/03/IMG_0001.MOV", bytes: 5)
+
+    #expect(await wire.asked().count == 1)
+  }
+
+  @Test("fails when the Disk refuses to make a folder")
+  func folderRefused() async throws {
+    let noFolder = Response(status: 409, body: Data(#"{"error":"DiskPathDoesntExistsError"}"#.utf8))
+    let wire = ScriptedWire([noFolder, Response(status: 507, body: Data())])
+
+    let failure = await #expect(throws: CloudRefusal.self) {
+      try await plain(wire).door(for: "2025/03/IMG_0001.MOV", bytes: 5)
+    }
+
+    #expect(failure?.description.contains("Folder app:/2025 refused with HTTP 507") == true)
+  }
+
+  @Test("fails when the link is still refused after the folders are made")
+  func linkRefusedAfterFolders() async throws {
+    let conflict = Response(status: 409, body: Data(#"{"error":"DiskPathDoesntExistsError"}"#.utf8))
+    let wire = ScriptedWire([conflict, created, created, conflict])
+
+    let failure = await #expect(throws: CloudRefusal.self) {
+      try await plain(wire).door(for: "2025/03/IMG_0001.MOV", bytes: 5)
+    }
+
+    #expect(failure?.description.contains("Upload link refused with HTTP 409") == true)
+  }
+
+  @Test("renames a disguised file within its folder")
+  func shelvedInFolder() async throws {
+    let wire = ScriptedWire([details, created, details])
+
+    _ = try await disguised(wire).shelved("2025/03/IMG_0001.MOV")
+
+    let asked = await wire.asked()
+    #expect(
+      asked[1].url.absoluteString
+        == "https://cloud-api.yandex.net/v1/disk/resources/move"
+        + "?from=app:/2025/03/IMG_0001.MOV.offload&overwrite=true&path=app:/2025/03/IMG_0001.MOV"
+    )
+  }
+
+  @Test("notes when the original was made, under the name rclone reads")
+  func dated() async throws {
+    let wire = ScriptedWire([details])
+
+    try await plain(wire).dated(
+      "2025/03/IMG_0001.MOV",
+      at: Date(timeIntervalSince1970: 1_741_600_072.5)
+    )
+
+    let asked = await wire.asked()
+    #expect(
+      asked.map { "\($0.method) \($0.url.absoluteString)" } == [
+        "PATCH https://cloud-api.yandex.net/v1/disk/resources?path=app:/2025/03/IMG_0001.MOV"
+      ]
+    )
+    #expect(
+      String(decoding: asked[0].body, as: UTF8.self)
+        == #"{"custom_properties":{"rclone_modified":"2025-03-10T09:47:52.500Z"}}"#
+    )
+    #expect(asked[0].headers["Content-Type"] == "application/json")
+    #expect(asked[0].headers["Authorization"] == "OAuth t0ken")
+  }
+
+  @Test("fails when the Disk refuses to note the date")
+  func dateRefused() async throws {
+    let wire = ScriptedWire([missing])
+
+    let failure = await #expect(throws: CloudRefusal.self) {
+      try await plain(wire).dated("IMG_0001.MOV", at: Date(timeIntervalSince1970: 1))
+    }
+
+    #expect(failure?.description.contains("Date of the original refused with HTTP 404") == true)
+  }
 }

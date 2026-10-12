@@ -39,6 +39,10 @@ public struct WithinAllowance: Depot {
   public func shelved(_ name: String) async throws -> [Fingerprint] {
     try await origin.shelved(name)
   }
+
+  public func dated(_ name: String, at taken: Date) async throws {
+    try await origin.dated(name, at: taken)
+  }
 }
 
 /// A file is larger than the cloud account accepts for a single file.

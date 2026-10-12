@@ -55,9 +55,12 @@ if CommandLine.arguments.last == "queued" {
       at: file,
       to: store.appendingPathComponent("probe/\(file.lastPathComponent)")
     )
-    let size =
-      (try FileManager.default.attributesOfItem(atPath: file.path)[.size] as? NSNumber)?
-      .int64Value ?? 0
+    let facts = try FileManager.default.attributesOfItem(atPath: file.path)
+    let size = (facts[.size] as? NSNumber)?.int64Value ?? 0
+    let changed = (facts[.modificationDate] as? Date) ?? Date()
+    // The file goes into a folder for its year and month, as the app's uploads do.
+    let name = Placement(taken: changed, id: stem, zone: .current)
+      .path(for: file.lastPathComponent)
     let transit = ImmediateTransit(session: URLSession(configuration: patient))
     let outbox = Outbox(
       manifest: Manifest(file: desk.appendingPathComponent("manifest.json")),
@@ -88,7 +91,8 @@ if CommandLine.arguments.last == "queued" {
             name: name,
             file: "probe/\(file.lastPathComponent)",
             bytes: size,
-            print: try FingerprintOf(file).value()
+            print: try FingerprintOf(file).value(),
+            taken: changed
           ),
         ]
       )

@@ -84,6 +84,9 @@ struct PatientWire: Wire {
     for (name, value) in request.headers {
       native.setValue(value, forHTTPHeaderField: name)
     }
+    if !request.body.isEmpty {
+      native.httpBody = request.body
+    }
     return native
   }
 

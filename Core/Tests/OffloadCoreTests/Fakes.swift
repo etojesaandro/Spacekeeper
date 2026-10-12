@@ -62,19 +62,39 @@ struct Ban: Verdict, LocalizedError {
 actor ArrangedDepot: Depot {
   private var shelves: [String: [[Fingerprint]]]
   private var troubles: [any Error]
+  private var smudges: [any Error]
   private var doors: [String] = []
   private var looks: [String] = []
+  private var dates: [String] = []
 
   /// - Parameters:
   ///   - shelves: Answers about what is held, by name.
   ///   - troubles: Errors the next requests for a door fail with, in turn.
-  init(_ shelves: [String: [[Fingerprint]]], troubles: [any Error]) {
+  ///   - smudges: Errors the next notings of a date fail with, in turn.
+  init(_ shelves: [String: [[Fingerprint]]], troubles: [any Error], smudges: [any Error]) {
     self.shelves = shelves
     self.troubles = troubles
+    self.smudges = smudges
+  }
+
+  init(_ shelves: [String: [[Fingerprint]]], troubles: [any Error]) {
+    self.init(shelves, troubles: troubles, smudges: [])
   }
 
   init(_ shelves: [String: [[Fingerprint]]]) {
-    self.init(shelves, troubles: [])
+    self.init(shelves, troubles: [], smudges: [])
+  }
+
+  func dated(_ name: String, at taken: Date) async throws {
+    if !smudges.isEmpty {
+      throw smudges.removeFirst()
+    }
+    dates.append("\(name) \(Int(taken.timeIntervalSince1970))")
+  }
+
+  /// Names dates were noted on, each with the date in seconds since 1970.
+  func noted() -> [String] {
+    dates
   }
 
   func door(for name: String, bytes: Int64) async throws -> Request {
@@ -173,6 +193,10 @@ actor GatedDepot: Depot {
 
   func door(for name: String, bytes: Int64) async throws -> Request {
     try await origin.door(for: name, bytes: bytes)
+  }
+
+  func dated(_ name: String, at taken: Date) async throws {
+    try await origin.dated(name, at: taken)
   }
 
   func shelved(_ name: String) async throws -> [Fingerprint] {

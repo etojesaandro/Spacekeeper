@@ -94,40 +94,72 @@ public struct Parcel: Codable, Sendable, Equatable {
   let file: String
   let bytes: Int64
   let print: Fingerprint
+  let taken: Date
   let leg: Leg
   let sends: Int
 
   /// - Parameters:
-  ///   - name: The name its copy carries in the cloud; no two parcels may share it.
+  ///   - name: The path its copy takes in the cloud; no two parcels may share it.
   ///   - file: Where it waits, as a path below the outbox's folder.
   ///   - bytes: Its size.
   ///   - print: Its fingerprint.
-  public init(name: String, file: String, bytes: Int64, print: Fingerprint) {
-    self.init(name: name, file: file, bytes: bytes, print: print, leg: .staged, sends: 0)
+  ///   - taken: When the original was made.
+  public init(name: String, file: String, bytes: Int64, print: Fingerprint, taken: Date) {
+    self.init(
+      name: name,
+      file: file,
+      bytes: bytes,
+      print: print,
+      taken: taken,
+      leg: .staged,
+      sends: 0
+    )
   }
 
-  init(name: String, file: String, bytes: Int64, print: Fingerprint, leg: Leg, sends: Int) {
+  init(
+    name: String,
+    file: String,
+    bytes: Int64,
+    print: Fingerprint,
+    taken: Date,
+    leg: Leg,
+    sends: Int
+  ) {
     self.name = name
     self.file = file
     self.bytes = bytes
     self.print = print
+    self.taken = taken
     self.leg = leg
     self.sends = sends
   }
 
+  /// The same file on another leg of its way, with this many sendings behind it.
+  private func moved(to leg: Leg, after sends: Int) -> Parcel {
+    Parcel(
+      name: name,
+      file: file,
+      bytes: bytes,
+      print: print,
+      taken: taken,
+      leg: leg,
+      sends: sends
+    )
+  }
+
   /// The same file on another leg of its way.
   func on(_ leg: Leg) -> Parcel {
-    Parcel(name: name, file: file, bytes: bytes, print: print, leg: leg, sends: sends)
+    moved(to: leg, after: sends)
   }
 
   /// The same file after one more sending has started.
   func sent() -> Parcel {
-    Parcel(name: name, file: file, bytes: bytes, print: print, leg: .sent, sends: sends + 1)
+    moved(to: .sent, after: sends + 1)
   }
 
   /// The same file waiting to be sent, with this many sendings behind it.
   func waiting(after sends: Int) -> Parcel {
-    Parcel(name: name, file: file, bytes: bytes, print: print, leg: .staged, sends: max(sends, 0))
+    moved(to: .staged, after: max(sends, 0))
   }
 
   /// Bytes that have reached the cloud, given how much of the current sending has gone.

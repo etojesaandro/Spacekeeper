@@ -13,4 +13,8 @@ public protocol Depot: Sendable {
   /// The fingerprint of what the cloud holds under the name, after finishing
   /// whatever filing an arrived file still needs; empty when it holds nothing.
   func shelved(_ name: String) async throws -> [Fingerprint]
+
+  /// Notes on the file held under the name when its original was made,
+  /// as the cloud by itself only knows when the file arrived.
+  func dated(_ name: String, at taken: Date) async throws
 }

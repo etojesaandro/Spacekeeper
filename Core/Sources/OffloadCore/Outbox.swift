@@ -217,7 +217,7 @@ public actor Outbox {
       }
       // The sending ended without word of how, so the cloud is asked.
       if try await depot.shelved(name) == [parcel.print] {
-        safe(parcel)
+        try await safe(parcel)
       } else {
         try await send(parcel)
       }
@@ -229,7 +229,7 @@ public actor Outbox {
         }
         found = try await depot.shelved(name)
         if found == [parcel.print] {
-          safe(parcel)
+          try await safe(parcel)
           return
         }
       }
@@ -257,7 +257,16 @@ public actor Outbox {
     say("\(parcel.name): sending \(parcel.bytes) bytes, time \(parcel.sends + 1)")
   }
 
-  private func safe(_ parcel: Parcel) {
+  /// Notes the original's date on the proven copy and counts the file as safe.
+  ///
+  /// A date the cloud refuses to note for good does not hold the file back:
+  /// the copy is identical all the same, and its content carries the date too.
+  private func safe(_ parcel: Parcel) async throws {
+    do {
+      try await depot.dated(parcel.name, at: parcel.taken)
+    } catch let verdict as any Verdict where verdict.stands() {
+      say("\(parcel.name): its date was not noted: \(verdict.localizedDescription)")
+    }
     mark(parcel.name) { $0.on(.safe) }
     try? FileManager.default.removeItem(at: store.appendingPathComponent(parcel.file))
     say("\(parcel.name): the cloud holds an identical copy")

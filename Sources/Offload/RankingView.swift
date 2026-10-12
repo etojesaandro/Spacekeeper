@@ -1,40 +1,40 @@
 import OffloadCore
 import SwiftUI
 
-/// The finished ranking: totals on top, then the biggest items.
+/// The finished survey: totals on top, then the items of a period in an order.
 ///
 /// Outside selection a tap picks one item; in selection a tap marks or
 /// unmarks it. Items already on their way to the cloud are shown as such
 /// and cannot be picked again.
 struct RankingView: View {
   private let findings: Survey.Findings
-  private let shown: Int
   private let selecting: Bool
   private let chosen: Binding<Set<String>>
   private let away: Set<String>
+  private let arrange: (Period, Order) -> Void
   private let pick: (MediaItem) -> Void
-  @ViewState private var smallest = false
+  @ViewState private var shown = 100
 
   /// - Parameters:
   ///   - findings: What the survey found.
-  ///   - shown: How many items of the chosen end to list.
   ///   - selecting: Whether taps mark items rather than pick one.
   ///   - chosen: Identifiers of the marked items.
   ///   - away: Identifiers of the items already on their way to the cloud.
+  ///   - arrange: Told which period and order the user wants listed.
   ///   - pick: Told which item the user tapped outside selection.
   init(
     findings: Survey.Findings,
-    shown: Int,
     selecting: Bool,
     chosen: Binding<Set<String>>,
     away: Set<String>,
+    arrange: @escaping (Period, Order) -> Void,
     pick: @escaping (MediaItem) -> Void
   ) {
     self.findings = findings
-    self.shown = shown
     self.selecting = selecting
     self.chosen = chosen
     self.away = away
+    self.arrange = arrange
     self.pick = pick
   }
 
@@ -49,12 +49,54 @@ struct RankingView: View {
         Text("Read in \(findings.seconds.formatted(.number.precision(.fractionLength(1)))) s.")
       }
       Section {
-        Picker("Order", selection: $smallest) {
-          Text("Biggest").tag(false)
-          Text("Smallest").tag(true)
+        HStack {
+          Menu {
+            ForEach(Order.allCases, id: \.self) { order in
+              Button {
+                rearrange(findings.period, order)
+              } label: {
+                if order == findings.order {
+                  Label(title(of: order), systemImage: "checkmark")
+                } else {
+                  Text(title(of: order))
+                }
+              }
+            }
+          } label: {
+            Label(title(of: findings.order), systemImage: "arrow.up.arrow.down")
+          }
+          Spacer()
+          Menu {
+            Button("All time") {
+              rearrange(.always, findings.order)
+            }
+            ForEach(years, id: \.year.period) { year, months in
+              Menu("\(title(of: year.period)) · \(size(year.bytes))") {
+                Button("All of \(title(of: year.period)) · \(weight(of: year))") {
+                  rearrange(year.period, findings.order)
+                }
+                ForEach(months) { month in
+                  Button("\(title(of: month.period)) · \(weight(of: month))") {
+                    rearrange(month.period, findings.order)
+                  }
+                }
+              }
+            }
+          } label: {
+            Label(title(of: findings.period), systemImage: "calendar")
+          }
         }
-        .pickerStyle(.segmented)
-        ForEach(listed) { item in
+        .buttonStyle(.borderless)
+        if selecting, !findings.listed.isEmpty {
+          Button(marked ? "Unmark these" : "Mark all \(markable.count) listed here") {
+            if marked {
+              chosen.wrappedValue.subtract(markable)
+            } else {
+              chosen.wrappedValue.formUnion(markable)
+            }
+          }
+        }
+        ForEach(findings.listed.prefix(shown)) { item in
           Button {
             tapped(item)
           } label: {
@@ -77,25 +119,58 @@ struct RankingView: View {
             }
           }
           .buttonStyle(.plain)
-          .disabled(away.contains(item.id))
+          .disabled(selecting && away.contains(item.id))
+        }
+        if findings.listed.count > shown {
+          Button("Show \(min(200, findings.listed.count - shown)) more") {
+            shown += 200
+          }
+        }
+        if findings.listed.isEmpty {
+          Text("Nothing from this period.")
+            .foregroundStyle(.secondary)
         }
       } header: {
-        Text("\(smallest ? "Smallest" : "Biggest") \(min(shown, findings.items.count))")
+        Text(
+          "\(findings.listed.count.formatted()) items · "
+            + size(findings.listed.reduce(0) { $0 + $1.bytes() })
+        )
       } footer: {
         Text(
           selecting
             ? "Tap the items to move, then use the button below."
-            : "Tap an item to move it to Yandex Disk, or use Select for several."
+            : "Tap an item to look at it and move it to Yandex Disk, or use Select for several."
         )
       }
     }
   }
 
-  /// The items of the chosen end of the ranking.
-  private var listed: [MediaItem] {
-    smallest
-      ? Array(findings.items.suffix(shown).reversed())
-      : Array(findings.items.prefix(shown))
+  /// The spans of the findings as years, each with its months.
+  private var years: [(year: Span, months: [Span])] {
+    var years: [(year: Span, months: [Span])] = []
+    for span in findings.spans {
+      if case .month = span.period, !years.isEmpty {
+        years[years.count - 1].months.append(span)
+      } else {
+        years.append((span, []))
+      }
+    }
+    return years
+  }
+
+  /// Identifiers of the listed items that can be marked.
+  private var markable: Set<String> {
+    Set(findings.listed.prefix(shown).map { $0.id }).subtracting(away)
+  }
+
+  /// Whether every listed item that can be marked is marked.
+  private var marked: Bool {
+    !markable.isEmpty && markable.isSubset(of: chosen.wrappedValue)
+  }
+
+  private func rearrange(_ period: Period, _ order: Order) {
+    shown = 100
+    arrange(period, order)
   }
 
   private func tapped(_ item: MediaItem) {
@@ -110,12 +185,41 @@ struct RankingView: View {
     }
   }
 
+  private func title(of order: Order) -> String {
+    switch order {
+    case .biggest:
+      return "Biggest first"
+    case .smallest:
+      return "Smallest first"
+    case .newest:
+      return "Newest first"
+    case .oldest:
+      return "Oldest first"
+    }
+  }
+
+  private func title(of period: Period) -> String {
+    switch period {
+    case .always:
+      return "All time"
+    case .year(let year):
+      return String(year)
+    case .month(let year, let month):
+      let names = Calendar.current.standaloneMonthSymbols
+      return names.indices.contains(month - 1) ? "\(names[month - 1]) \(year)" : String(year)
+    }
+  }
+
+  private func weight(of span: Span) -> String {
+    "\(size(span.bytes)) · \(span.count.formatted())"
+  }
+
   private func size(_ bytes: Int64) -> String {
     bytes.formatted(.byteCount(style: .file))
   }
 }
 
-/// One line of the ranking.
+/// One line of the list.
 private struct ItemRow: View {
   let item: MediaItem
 

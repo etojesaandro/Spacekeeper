@@ -6,6 +6,9 @@ import os
 
 /// Lays the files of library items ready for upload in the outbox's store.
 ///
+/// Each file is given its place in the cloud: a folder for the year and
+/// month the item was made, and a name that starts with that moment.
+///
 /// The system can only upload a file that lies in the app's own folders
 /// while the app is closed, so each file of an item is placed there. A video
 /// that is on the device is placed as a clone, which shares its storage with
@@ -35,7 +38,8 @@ struct Staging: Sendable {
       unsaved.isExcludedFromBackup = true
       var root = store
       try? root.setResourceValues(unsaved)
-      let prefix = "\(stamp(asset))_\(item.id.prefix(8))"
+      let taken = asset.creationDate ?? .distantPast
+      let placement = Placement(taken: taken, id: item.id, zone: .current)
       var parcels: [Parcel] = []
       var names: Set<String> = []
       for (index, resource) in PHAssetResource.assetResources(for: asset).enumerated() {
@@ -46,8 +50,10 @@ struct Staging: Sendable {
           try await copy(of: resource, at: file)
         }
         // Two files of one asset may share a filename, so the position tells them apart.
-        let plain = "\(prefix)_\(resource.originalFilename)"
-        let name = names.contains(plain) ? "\(prefix)_\(index)_\(resource.originalFilename)" : plain
+        let plain = placement.path(for: resource.originalFilename)
+        let name = names.contains(plain)
+          ? placement.path(for: resource.originalFilename, marked: "\(index)")
+          : plain
         names.insert(name)
         let print = try FingerprintOf(file).value()
         let how = cloned ? "cloned" : "copied"
@@ -63,7 +69,8 @@ struct Staging: Sendable {
             name: name,
             file: "\(folder)/\(file.lastPathComponent)",
             bytes: bytes(at: file),
-            print: print
+            print: print,
+            taken: taken
           )
         )
       }
@@ -132,16 +139,6 @@ struct Staging: Sendable {
   private func bytes(at file: URL) -> Int64 {
     let facts = try? FileManager.default.attributesOfItem(atPath: file.path)
     return (facts?[.size] as? NSNumber)?.int64Value ?? -1
-  }
-
-  private func stamp(_ asset: PHAsset) -> String {
-    guard let created = asset.creationDate else {
-      return "undated"
-    }
-    let format = DateFormatter()
-    format.locale = Locale(identifier: "en_US_POSIX")
-    format.dateFormat = "yyyy-MM-dd_HH-mm-ss"
-    return format.string(from: created)
   }
 }
 

@@ -25,6 +25,10 @@ struct SignedInDisk: Depot {
     try await disk().shelved(name)
   }
 
+  func dated(_ name: String, at taken: Date) async throws {
+    try await disk().dated(name, at: taken)
+  }
+
   private func disk() throws -> any Depot {
     let api = YandexApi(token: try token.value(), wire: wire)
     return WithinAllowance(YandexDisk(api: api), api: api)

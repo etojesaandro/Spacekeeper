@@ -72,13 +72,19 @@ public struct YandexDisk: Cloud, Depot {
     return Fingerprint(bytes: stored.size, md5: stored.md5)
   }
 
+  /// A name may lead through folders, which are made when the Disk misses them.
   public func door(for name: String, bytes: Int64) async throws -> Request {
-    let slot = try await api.answer(
-      UploadSlot.self,
-      step: "Upload link",
-      resource: "disk/resources/upload",
-      query: ["path": folder + disguise.name(for: name), "overwrite": "true"]
-    )
+    let query = ["path": folder + disguise.name(for: name), "overwrite": "true"]
+    var link = try await api.response(resource: "disk/resources/upload", query: query)
+    if link.status == 409 || link.status == 404, name.contains("/") {
+      // The Disk answers so when the folder is not there, which costs nothing to put right.
+      try await folders(to: name)
+      link = try await api.response(resource: "disk/resources/upload", query: query)
+    }
+    guard link.status == 200 else {
+      throw CloudRefusal(step: "Upload link", response: link)
+    }
+    let slot = try JSONDecoder().decode(UploadSlot.self, from: link.body)
     guard !slot.templated, let target = URL(string: slot.href) else {
       throw UnusableUploadLink(href: slot.href)
     }
@@ -97,6 +103,43 @@ public struct YandexDisk: Cloud, Depot {
       return [Fingerprint(bytes: stored.size, md5: stored.md5)]
     }
     return try await held(path).map { Fingerprint(bytes: $0.size, md5: $0.md5) }
+  }
+
+  /// The Disk keeps its own dates of a file, which say when it arrived and
+  /// cannot be set. So the moment is kept beside them, under the name that
+  /// rclone reads to give a downloaded file its date back.
+  public func dated(_ name: String, at taken: Date) async throws {
+    let format = ISO8601DateFormatter()
+    format.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    let noted = try await api.response(
+      method: "PATCH",
+      resource: "disk/resources",
+      query: ["path": folder + name],
+      json: Data(
+        #"{"custom_properties":{"rclone_modified":"\#(format.string(from: taken))"}}"#.utf8
+      )
+    )
+    guard noted.status == 200 else {
+      throw CloudRefusal(step: "Date of the original", response: noted)
+    }
+  }
+
+  /// Makes the folders a name leads through, outermost first.
+  private func folders(to name: String) async throws {
+    var path = folder
+    for level in name.split(separator: "/").dropLast() {
+      path += level
+      let made = try await api.response(
+        method: "PUT",
+        resource: "disk/resources",
+        query: ["path": path]
+      )
+      // A folder that is already there is refused with 409.
+      guard made.status == 201 || made.status == 409 else {
+        throw CloudRefusal(step: "Folder \(path)", response: made)
+      }
+      path += "/"
+    }
   }
 
   private func rename(_ travelling: String, to path: String) async throws {

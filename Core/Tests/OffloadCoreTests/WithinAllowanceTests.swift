@@ -133,4 +133,16 @@ struct WithinAllowanceTests {
     #expect(held == [hello])
     #expect(await wire.asked().isEmpty)
   }
+
+  @Test("passes the date of an original on without asking for the limits")
+  func dated() async throws {
+    let wire = ScriptedWire([])
+    let inner = ArrangedDepot([:])
+
+    try await WithinAllowance(inner, api: YandexApi(token: "t0ken", wire: wire))
+      .dated("IMG_0001.HEIC", at: Date(timeIntervalSince1970: 7))
+
+    #expect(await inner.noted() == ["IMG_0001.HEIC 7"])
+    #expect(await wire.asked().isEmpty)
+  }
 }
