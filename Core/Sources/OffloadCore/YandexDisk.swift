@@ -2,25 +2,45 @@ import Foundation
 
 /// Yandex Disk as a place to keep files.
 ///
-/// An upload takes three calls: ask for a one-time upload link, send the
-/// file to it, then read back the size and MD5 the Disk recorded. A file
-/// already stored under the same name is replaced, so a failed attempt can
-/// simply be repeated.
+/// An upload asks for a one-time upload link, sends the file to it, then
+/// reads back the size and MD5 the Disk recorded. A file already stored
+/// under the same name is replaced, so a failed attempt can simply be
+/// repeated.
+///
+/// The Disk slows uploads through this API to about 128 KiB/s for videos,
+/// archives and data files, and decides that from the file's extension at
+/// the moment the link is requested. So the file travels under its name
+/// with a neutral extension added, and is renamed once it has arrived.
+///
+/// The Disk also files an upload away after it has answered, so the stored
+/// file may take a moment to appear; reading it back is retried for a while.
 public struct YandexDisk: Cloud {
   private let api: YandexApi
   private let folder: String
+  private let disguise: String
+  private let patience: Patience
 
   /// - Parameters:
   ///   - api: The Disk API of the user.
   ///   - folder: Disk path the files go under, ending with a slash.
-  public init(api: YandexApi, folder: String) {
+  ///   - disguise: Extension added to the name while the file travels; empty for none.
+  ///   - patience: How long to wait for the Disk to file an upload away.
+  public init(api: YandexApi, folder: String, disguise: String, patience: Patience) {
     self.api = api
     self.folder = folder
+    self.disguise = disguise
+    self.patience = patience
   }
 
-  /// Stores into the application's own folder.
+  /// Stores into the application's own folder, renaming after upload and
+  /// waiting up to two minutes for the file to appear.
   public init(api: YandexApi) {
-    self.init(api: api, folder: "app:/")
+    self.init(
+      api: api,
+      folder: "app:/",
+      disguise: ".offload",
+      patience: Patience(tries: 60, pause: .seconds(2))
+    )
   }
 
   /// Talks to the public API through the given network.
@@ -39,7 +59,7 @@ public struct YandexDisk: Cloud {
       UploadSlot.self,
       step: "Upload link",
       resource: "disk/resources/upload",
-      query: ["path": path, "overwrite": "true"]
+      query: ["path": path + disguise, "overwrite": "true"]
     )
     guard !slot.templated, let target = URL(string: slot.href) else {
       throw UnusableUploadLink(href: slot.href)
@@ -48,13 +68,54 @@ public struct YandexDisk: Cloud {
     guard sent.status == 201 || sent.status == 202 else {
       throw CloudRefusal(step: "Upload", response: sent)
     }
-    let stored = try await api.answer(
-      StoredFile.self,
-      step: "Stored file details",
-      resource: "disk/resources",
-      query: ["path": path, "fields": "size,md5"]
-    )
+    if !disguise.isEmpty {
+      _ = try await settled(path + disguise)
+      let moved = try await api.response(
+        method: "POST",
+        resource: "disk/resources/move",
+        query: ["from": path + disguise, "path": path, "overwrite": "true"]
+      )
+      guard moved.status == 201 || moved.status == 202 else {
+        throw CloudRefusal(step: "Rename after upload", response: moved)
+      }
+    }
+    let stored = try await settled(path)
     return Fingerprint(bytes: stored.size, md5: stored.md5)
+  }
+
+  /// What the Disk holds at the path, waiting while it is not there yet.
+  private func settled(_ path: String) async throws -> StoredFile {
+    var response = Response(status: 404, body: Data())
+    for attempt in 0..<patience.tries {
+      if attempt > 0 {
+        try await Task.sleep(for: patience.pause)
+      }
+      response = try await api.response(
+        resource: "disk/resources",
+        query: ["path": path, "fields": "size,md5"]
+      )
+      if response.status == 200 {
+        return try JSONDecoder().decode(StoredFile.self, from: response.body)
+      }
+      if response.status != 404 {
+        break
+      }
+    }
+    throw CloudRefusal(step: "Stored file details", response: response)
+  }
+}
+
+/// How persistently to ask for something that takes the Disk a while.
+public struct Patience: Sendable {
+  let tries: Int
+  let pause: Duration
+
+  /// - Parameters:
+  ///   - tries: How many times to ask at most.
+  ///   - pause: How long to wait between two tries.
+  public init(tries: Int, pause: Duration) {
+    self.tries = tries
+    self.pause = pause
   }
 }
 

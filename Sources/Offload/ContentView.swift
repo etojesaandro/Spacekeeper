@@ -16,7 +16,6 @@ struct ContentView: View {
     let patient = URLSessionConfiguration.default
     patient.timeoutIntervalForRequest = 600
     patient.timeoutIntervalForResource = 6 * 3600
-    patient.waitsForConnectivity = true
     _relocation = ViewState(
       initialValue: Relocation(token: token, session: URLSession(configuration: patient))
     )

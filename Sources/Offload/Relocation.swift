@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import OffloadCore
+import os
 
 /// The move of one library item to Yandex Disk, as the screen follows it.
 @MainActor
@@ -36,19 +37,15 @@ final class Relocation {
     defer {
       try? FileManager.default.removeItem(at: folder)
     }
+    let log = Logger(subsystem: "Offload", category: "move")
     let say: @Sendable (String) -> Void = { text in
+      log.notice("\(text, privacy: .public)")
       Task { @MainActor in
         self.noted(text)
       }
     }
-    let wire = PatientWire(session: session) { sent, total in
-      say(
-        sent < total
-          ? "Uploading: \(sent.formatted(.byteCount(style: .file))) of "
-            + "\(total.formatted(.byteCount(style: .file)))"
-          : "Sent. Waiting for Yandex Disk to confirm"
-      )
-    }
+    let wire = PatientWire(session: session, say: say)
+    log.notice("begin \(item.name, privacy: .public), \(item.bytes()) bytes")
     let vigil = Vigil()
     vigil.begin()
     defer {
@@ -60,12 +57,14 @@ final class Relocation {
         of: NarratedOriginal(PhotoOriginal(id: item.id, folder: folder), say: say),
         to: NarratedCloud(WithinAllowance(YandexDisk(api: api), api: api), say: say)
       ).run()
+      log.notice("moved \(item.name, privacy: .public)")
       stage = .finished(
         "\(item.name) is on Yandex Disk and in Recently Deleted on this iPhone. "
           + "Its space is freed once Recently Deleted is emptied."
       )
       return true
     } catch {
+      log.error("not moved: \(error.localizedDescription, privacy: .public)")
       stage = .failed(error.localizedDescription)
       return false
     }

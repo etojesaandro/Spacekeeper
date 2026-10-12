@@ -11,46 +11,113 @@ struct YandexDiskTests {
     )
   )
   private let created = Response(status: 201, body: Data())
+  private let accepted = Response(status: 202, body: Data())
+  private let missing = Response(status: 404, body: Data(#"{"error":"DiskNotFoundError"}"#.utf8))
   private let details = Response(
     status: 200,
     body: Data(#"{"size":5,"md5":"5d41402abc4b2a76b9719d911017c592"}"#.utf8)
   )
-  private let local = URL(fileURLWithPath: "/tmp/IMG_0001.HEIC")
+  private let hello = Fingerprint(bytes: 5, md5: "5d41402abc4b2a76b9719d911017c592")
+  private let local = URL(fileURLWithPath: "/tmp/IMG_0001.MOV")
+
+  /// A Disk that uploads under the final name and does not wait between tries.
+  private func plain(_ wire: ScriptedWire) -> YandexDisk {
+    YandexDisk(
+      api: YandexApi(token: "t0ken", wire: wire),
+      folder: "app:/",
+      disguise: "",
+      patience: Patience(tries: 3, pause: .zero)
+    )
+  }
+
+  /// A Disk that uploads under a neutral extension and does not wait between tries.
+  private func disguised(_ wire: ScriptedWire) -> YandexDisk {
+    YandexDisk(
+      api: YandexApi(token: "t0ken", wire: wire),
+      folder: "app:/",
+      disguise: ".offload",
+      patience: Patience(tries: 3, pause: .zero)
+    )
+  }
 
   @Test("reports the size and MD5 the Disk recorded for the uploaded file")
   func reportsFingerprint() async throws {
     let wire = ScriptedWire([link, created, details])
 
-    let kept = try await YandexDisk(token: "t0ken", wire: wire).kept(local, as: "IMG_0001.HEIC")
+    let kept = try await plain(wire).kept(local, as: "IMG_0001.MOV")
 
-    #expect(kept == Fingerprint(bytes: 5, md5: "5d41402abc4b2a76b9719d911017c592"))
+    #expect(kept == hello)
   }
 
   @Test("asks for a link, sends the file to it, then reads the stored details")
   func callSequence() async throws {
     let wire = ScriptedWire([link, created, details])
 
-    _ = try await YandexDisk(token: "t0ken", wire: wire).kept(local, as: "IMG_0001.HEIC")
+    _ = try await plain(wire).kept(local, as: "IMG_0001.MOV")
 
     let asked = await wire.asked()
     let sent = await wire.sent()
     #expect(
       asked.map { "\($0.method) \($0.url.absoluteString)" } == [
         "GET https://cloud-api.yandex.net/v1/disk/resources/upload"
-          + "?overwrite=true&path=app:/IMG_0001.HEIC",
+          + "?overwrite=true&path=app:/IMG_0001.MOV",
         "PUT https://uploader.example/put/42",
         "GET https://cloud-api.yandex.net/v1/disk/resources"
-          + "?fields=size,md5&path=app:/IMG_0001.HEIC",
+          + "?fields=size,md5&path=app:/IMG_0001.MOV",
       ]
     )
     #expect(sent == [local])
+  }
+
+  @Test("uploads under a neutral extension and renames, so a video is not slowed down")
+  func disguisedSequence() async throws {
+    let wire = ScriptedWire([link, created, details, created, details])
+
+    let kept = try await disguised(wire).kept(local, as: "IMG_0001.MOV")
+
+    let asked = await wire.asked()
+    #expect(kept == hello)
+    #expect(
+      asked.map { "\($0.method) \($0.url.absoluteString)" } == [
+        "GET https://cloud-api.yandex.net/v1/disk/resources/upload"
+          + "?overwrite=true&path=app:/IMG_0001.MOV.offload",
+        "PUT https://uploader.example/put/42",
+        "GET https://cloud-api.yandex.net/v1/disk/resources"
+          + "?fields=size,md5&path=app:/IMG_0001.MOV.offload",
+        "POST https://cloud-api.yandex.net/v1/disk/resources/move"
+          + "?from=app:/IMG_0001.MOV.offload&overwrite=true&path=app:/IMG_0001.MOV",
+        "GET https://cloud-api.yandex.net/v1/disk/resources"
+          + "?fields=size,md5&path=app:/IMG_0001.MOV",
+      ]
+    )
+  }
+
+  @Test("waits for a rename the Disk finishes after it has answered")
+  func slowRename() async throws {
+    let wire = ScriptedWire([link, created, details, accepted, missing, details])
+
+    let kept = try await disguised(wire).kept(local, as: "IMG_0001.MOV")
+
+    #expect(kept == hello)
+  }
+
+  @Test("fails when the Disk refuses the rename")
+  func renameRefused() async throws {
+    let locked = Response(status: 423, body: Data(#"{"error":"DiskResourceLockedError"}"#.utf8))
+    let wire = ScriptedWire([link, created, details, locked])
+
+    let failure = await #expect(throws: CloudRefusal.self) {
+      try await disguised(wire).kept(local, as: "IMG_0001.MOV")
+    }
+
+    #expect(failure?.description.contains("Rename after upload refused with HTTP 423") == true)
   }
 
   @Test("sends the token to the API but never to the upload link")
   func tokenScope() async throws {
     let wire = ScriptedWire([link, created, details])
 
-    _ = try await YandexDisk(token: "t0ken", wire: wire).kept(local, as: "IMG_0001.HEIC")
+    _ = try await plain(wire).kept(local, as: "IMG_0001.MOV")
 
     let asked = await wire.asked()
     #expect(asked.map { $0.headers["Authorization"] } == ["OAuth t0ken", nil, "OAuth t0ken"])
@@ -60,19 +127,42 @@ struct YandexDiskTests {
   func escapesName() async throws {
     let wire = ScriptedWire([link, created, details])
 
-    _ = try await YandexDisk(token: "t0ken", wire: wire).kept(local, as: "a+b &c.mov")
+    _ = try await plain(wire).kept(local, as: "a+b &c.mov")
 
     let asked = await wire.asked()
     #expect(asked[0].url.absoluteString.hasSuffix("path=app:/a%2Bb%20%26c.mov"))
   }
 
-  @Test("accepts an upload the Disk has received but not yet filed")
+  @Test("waits for a file the Disk has received but not yet filed away")
   func acceptedUpload() async throws {
-    let wire = ScriptedWire([link, Response(status: 202, body: Data()), details])
+    let wire = ScriptedWire([link, accepted, missing, missing, details])
 
-    let kept = try await YandexDisk(token: "t0ken", wire: wire).kept(local, as: "IMG_0001.HEIC")
+    let kept = try await plain(wire).kept(local, as: "IMG_0001.MOV")
 
-    #expect(kept == Fingerprint(bytes: 5, md5: "5d41402abc4b2a76b9719d911017c592"))
+    #expect(kept == hello)
+  }
+
+  @Test("gives up when the uploaded file never appears")
+  func neverAppears() async throws {
+    let wire = ScriptedWire([link, accepted, missing, missing, missing])
+
+    let failure = await #expect(throws: CloudRefusal.self) {
+      try await plain(wire).kept(local, as: "IMG_0001.MOV")
+    }
+
+    #expect(failure?.description.contains("Stored file details refused with HTTP 404") == true)
+  }
+
+  @Test("does not keep asking when reading the stored file is refused outright")
+  func detailsRefused() async throws {
+    let wire = ScriptedWire([link, created, Response(status: 401, body: Data())])
+
+    let failure = await #expect(throws: CloudRefusal.self) {
+      try await plain(wire).kept(local, as: "IMG_0001.MOV")
+    }
+
+    #expect(failure?.description.contains("401") == true)
+    #expect(await wire.asked().count == 3)
   }
 
   @Test("fails without uploading when the Disk refuses to issue a link")
@@ -84,7 +174,7 @@ struct YandexDiskTests {
     let wire = ScriptedWire([conflict])
 
     let failure = await #expect(throws: CloudRefusal.self) {
-      try await YandexDisk(token: "t0ken", wire: wire).kept(local, as: "IMG_0001.HEIC")
+      try await plain(wire).kept(local, as: "IMG_0001.MOV")
     }
 
     let sent = await wire.sent()
@@ -98,7 +188,7 @@ struct YandexDiskTests {
     let wire = ScriptedWire([link, Response(status: 507, body: Data())])
 
     let failure = await #expect(throws: CloudRefusal.self) {
-      try await YandexDisk(token: "t0ken", wire: wire).kept(local, as: "IMG_0001.HEIC")
+      try await plain(wire).kept(local, as: "IMG_0001.MOV")
     }
 
     #expect(failure?.description.contains("507") == true)
@@ -113,7 +203,7 @@ struct YandexDiskTests {
     let wire = ScriptedWire([templated])
 
     await #expect(throws: UnusableUploadLink.self) {
-      try await YandexDisk(token: "t0ken", wire: wire).kept(local, as: "IMG_0001.HEIC")
+      try await plain(wire).kept(local, as: "IMG_0001.MOV")
     }
   }
 }

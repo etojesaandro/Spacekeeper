@@ -23,9 +23,18 @@ public struct YandexApi: Sendable {
 
   /// Asks the API a question and returns its answer whatever the status.
   func response(resource: String, query: [String: String]) async throws -> Response {
+    try await response(method: "GET", resource: resource, query: query)
+  }
+
+  /// Sends the API a request without a body and returns its answer whatever the status.
+  func response(
+    method: String,
+    resource: String,
+    query: [String: String]
+  ) async throws -> Response {
     try await wire.response(
       to: Request(
-        method: "GET",
+        method: method,
         url: address(resource: resource, query: query),
         headers: ["Authorization": "OAuth \(token)", "Accept": "application/json"]
       )
