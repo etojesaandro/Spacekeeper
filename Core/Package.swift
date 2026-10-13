@@ -19,6 +19,10 @@ let package = Package(
       name: "offload-probe",
       targets: ["OffloadProbe"]
     ),
+    .executable(
+      name: "offload-backup",
+      targets: ["OffloadBackup"]
+    ),
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
@@ -32,6 +36,10 @@ let package = Package(
     ),
     .executableTarget(
       name: "OffloadProbe",
+      dependencies: ["OffloadCore"]
+    ),
+    .executableTarget(
+      name: "OffloadBackup",
       dependencies: ["OffloadCore"]
     ),
     .testTarget(

@@ -6,6 +6,7 @@ struct ContentView: View {
   private let survey: Survey
   private let uploads: Uploads
   private let kept: Kept
+  private let cable: CableBackup
   private let token: KeychainToken
   @ViewState private var selecting = false
   @ViewState private var chosen: Set<String> = []
@@ -13,6 +14,7 @@ struct ContentView: View {
   @ViewState private var viewed: [MediaItem] = []
   @ViewState private var asking = false
   @ViewState private var browsing = false
+  @ViewState private var wiring = false
   @Environment(\.scenePhase) private var phase
   // The ClientID names the application to Yandex; it is public, not a secret.
   private let signIn = YandexSignIn(client: "3dc12ba965ba42bc81540825932299c0")
@@ -21,11 +23,13 @@ struct ContentView: View {
   ///   - survey: The library survey to show.
   ///   - uploads: The move of items to Yandex Disk.
   ///   - kept: What Yandex Disk keeps.
+  ///   - cable: The backup to a computer over the cable.
   ///   - token: Where the Yandex Disk token is kept.
-  init(survey: Survey, uploads: Uploads, kept: Kept, token: KeychainToken) {
+  init(survey: Survey, uploads: Uploads, kept: Kept, cable: CableBackup, token: KeychainToken) {
     self.survey = survey
     self.uploads = uploads
     self.kept = kept
+    self.cable = cable
     self.token = token
   }
 
@@ -40,16 +44,21 @@ struct ContentView: View {
               chosen = []
             }
           }
-          ToolbarItemGroup(placement: .topBarTrailing) {
-            Button("On Yandex Disk", systemImage: "icloud") {
-              browsing = true
-            }
-            Button("Yandex Disk account", systemImage: "person.crop.circle") {
-              asking = true
-            }
-            Button("Read again", systemImage: "arrow.clockwise") {
-              Task {
-                await survey.afresh()
+          ToolbarItem(placement: .topBarTrailing) {
+            Menu("More", systemImage: "ellipsis.circle") {
+              Button("On Yandex Disk", systemImage: "icloud") {
+                browsing = true
+              }
+              Button("Back up to a computer", systemImage: "desktopcomputer") {
+                wiring = true
+              }
+              Button("Yandex Disk account", systemImage: "person.crop.circle") {
+                asking = true
+              }
+              Button("Read the library again", systemImage: "arrow.clockwise") {
+                Task {
+                  await survey.afresh()
+                }
               }
             }
           }
@@ -104,6 +113,13 @@ struct ContentView: View {
       }
     } content: {
       AccountSheet(token: token, signIn: signIn)
+    }
+    .sheet(isPresented: $wiring) {
+      NavigationStack {
+        CableView(cable: cable) {
+          wiring = false
+        }
+      }
     }
     .sheet(isPresented: $browsing) {
       NavigationStack {

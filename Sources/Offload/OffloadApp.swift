@@ -10,6 +10,7 @@ struct OffloadApp: App {
         survey: delegate.survey,
         uploads: delegate.uploads,
         kept: delegate.kept,
+        cable: delegate.cable,
         token: delegate.token
       )
     }

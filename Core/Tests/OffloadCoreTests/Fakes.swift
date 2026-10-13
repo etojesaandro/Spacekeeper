@@ -328,3 +328,147 @@ struct Refusal: LocalizedError {
     "the library declined"
   }
 }
+
+/// A phone's stock a test lays out: items, and what each of their files holds.
+actor ArrangedStock: Stock {
+  private let listed: [MediaItem]
+  private let contents: [String: [Data]]
+  private let places: [String: [String]]
+  private let cut: Set<String>
+  private var holding: [String] = []
+  private var fetches: [String] = []
+
+  /// - Parameters:
+  ///   - items: The items of the library.
+  ///   - contents: What each file of an item holds, by item identifier.
+  ///   - places: Paths offered for an item's files, where a test wants other than the usual.
+  ///   - cut: Identifiers of items whose files break off after their first bytes.
+  init(
+    items: [MediaItem],
+    contents: [String: [Data]],
+    places: [String: [String]],
+    cut: Set<String>
+  ) {
+    self.listed = items
+    self.contents = contents
+    self.places = places
+    self.cut = cut
+  }
+
+  init(items: [MediaItem], contents: [String: [Data]]) {
+    self.init(items: items, contents: contents, places: [:], cut: [])
+  }
+
+  func items() async -> [MediaItem] {
+    listed
+  }
+
+  func pieces(of id: String) async throws -> [Piece] {
+    guard let files = contents[id] else {
+      throw Outage()
+    }
+    return files.indices.map { index in
+      Piece(
+        index: index,
+        path: places[id]?[index] ?? "2025/03/\(id)-\(index).bin",
+        taken: Date(timeIntervalSince1970: 1_741_600_072)
+      )
+    }
+  }
+
+  func pour(_ index: Int, of id: String, fetching: Bool, into sink: any Sink) async throws {
+    fetches.append("\(id) \(index) \(fetching)")
+    guard let files = contents[id], files.indices.contains(index) else {
+      throw Outage()
+    }
+    let content = files[index]
+    try await sink.take(content.prefix(content.count / 2))
+    if cut.contains(id) {
+      throw Outage()
+    }
+    try await sink.take(content.dropFirst(content.count / 2))
+  }
+
+  func held(_ ids: [String]) async {
+    holding += ids
+  }
+
+  /// Identifiers a computer said it holds.
+  func told() -> [String] {
+    holding
+  }
+
+  /// What was poured: item, file number and whether iCloud was to be asked.
+  func poured() -> [String] {
+    fetches
+  }
+}
+
+/// A network that leads straight into a hatch, as a cable would.
+struct HatchWire: Wire {
+  private let hatch: Hatch
+
+  init(_ hatch: Hatch) {
+    self.hatch = hatch
+  }
+
+  func response(to request: Request) async throws -> Response {
+    let pile = Pile()
+    var head = "\(request.method) \(request.url.path)"
+    if let query = request.url.query(percentEncoded: true) {
+      head += "?\(query)"
+    }
+    head += " HTTP/1.1\r\n"
+    for (name, value) in request.headers {
+      head += "\(name): \(value)\r\n"
+    }
+    await hatch.serve(Data((head + "\r\n").utf8), through: pile)
+    let raw = await pile.all()
+    guard let gap = raw.range(of: Data("\r\n\r\n".utf8)) else {
+      throw Outage()
+    }
+    let status = String(decoding: raw[..<gap.lowerBound], as: UTF8.self)
+      .split(separator: " ").dropFirst().first.flatMap { Int($0) } ?? 0
+    return Response(status: status, body: Data(raw[gap.upperBound...]))
+  }
+
+  func response(to request: Request, sending file: URL) async throws -> Response {
+    throw Outage()
+  }
+
+  func response(to request: Request, saving file: URL) async throws -> Response {
+    let answer = try await response(to: request)
+    try answer.body.write(to: file)
+    return Response(status: answer.status, body: Data())
+  }
+}
+
+/// A sink that piles up what it is given.
+actor Pile: Sink {
+  private var data = Data()
+
+  func take(_ chunk: Data) async throws {
+    data.append(chunk)
+  }
+
+  func all() -> Data {
+    data
+  }
+}
+
+/// A backup onlooker that writes down what it is told.
+final class BackupNotes: BackupOnlooker, @unchecked Sendable {
+  private let notes = Notes()
+
+  func copying(_ number: Int, of count: Int, _ item: MediaItem) {
+    notes.add("copying \(number) of \(count): \(item.name)")
+  }
+
+  func failed(_ item: MediaItem, _ reason: String) {
+    notes.add("failed \(item.name)")
+  }
+
+  func all() -> [String] {
+    notes.all()
+  }
+}

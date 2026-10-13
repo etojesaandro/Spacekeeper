@@ -45,6 +45,23 @@ struct PlacementTests {
     )
   }
 
+  @Test("places the files of an original in order, marking one that repeats a name")
+  func paths() {
+    let placement = Placement(
+      taken: Date(timeIntervalSince1970: 1_741_600_072),
+      id: "B504FF1B",
+      zone: moscow
+    )
+
+    #expect(
+      placement.paths(for: ["IMG_1.HEIC", "IMG_1.MOV", "IMG_1.HEIC"]) == [
+        "2025/03/2025-03-10_12-47-52_B504FF1B_IMG_1.HEIC",
+        "2025/03/2025-03-10_12-47-52_B504FF1B_IMG_1.MOV",
+        "2025/03/2025-03-10_12-47-52_B504FF1B_2_IMG_1.HEIC",
+      ]
+    )
+  }
+
   @Test("keeps an original of unknown date in a folder of its own")
   func undated() {
     let placement = Placement(taken: .distantPast, id: "B504FF1B", zone: moscow)

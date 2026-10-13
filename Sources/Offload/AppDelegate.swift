@@ -11,11 +11,12 @@ import os
 /// itself and takes no arguments, which is why it builds its own parts.
 @MainActor
 final class AppDelegate: NSObject, UIApplicationDelegate {
-  // The app's scene reads these four to hand them to its views.
+  // The app's scene reads these five to hand them to its views.
   let token: KeychainToken
   let survey: Survey
   let uploads: Uploads
   let kept: Kept
+  let cable: CableBackup
 
   override init() {
     let token = KeychainToken(service: "Offload.YandexDisk")
@@ -43,8 +44,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
       log.notice("\(text, privacy: .public)")
     }
     let (words, pen) = AsyncStream<String>.makeStream()
+    let (asked, bell) = AsyncStream<CableNews>.makeStream()
     self.token = token
     self.survey = survey
+    self.cable = CableBackup(
+      stock: PhotoStock(survey: survey, news: bell),
+      bin: PhotoBin(),
+      survey: survey,
+      news: asked,
+      port: 47810
+    )
     self.kept = Kept(
       archive: SignedInDisk(
         token: token,
@@ -92,6 +101,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
   ) -> Bool {
     uploads.start()
     kept.start()
+    cable.start()
     return true
   }
 

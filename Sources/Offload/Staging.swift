@@ -39,22 +39,18 @@ struct Staging: Sendable {
       var root = store
       try? root.setResourceValues(unsaved)
       let taken = asset.creationDate ?? .distantPast
-      let placement = Placement(taken: taken, id: item.id, zone: .current)
+      let resources = PHAssetResource.assetResources(for: asset)
+      let names = Placement(taken: taken, id: item.id, zone: .current)
+        .paths(for: resources.map { $0.originalFilename })
       var parcels: [Parcel] = []
-      var names: Set<String> = []
-      for (index, resource) in PHAssetResource.assetResources(for: asset).enumerated() {
+      for (index, resource) in resources.enumerated() {
         let file = place.appendingPathComponent("\(index)-\(resource.originalFilename)")
         let started = Date()
         let cloned = await clone(of: resource, in: asset, at: file)
         if !cloned {
           try await copy(of: resource, at: file)
         }
-        // Two files of one asset may share a filename, so the position tells them apart.
-        let plain = placement.path(for: resource.originalFilename)
-        let name = names.contains(plain)
-          ? placement.path(for: resource.originalFilename, marked: "\(index)")
-          : plain
-        names.insert(name)
+        let name = names[index]
         let print = try FingerprintOf(file).value()
         let how = cloned ? "cloned" : "copied"
         let seconds = Date().timeIntervalSince(started)

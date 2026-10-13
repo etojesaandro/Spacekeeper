@@ -21,6 +21,20 @@ public struct Placement: Sendable {
     self.zone = zone
   }
 
+  /// The paths of an original's files, in their order.
+  ///
+  /// Two files of one original may share a name; the later one is then
+  /// told apart by its position among the files.
+  public func paths(for filenames: [String]) -> [String] {
+    var taken: Set<String> = []
+    return filenames.enumerated().map { index, filename in
+      let plain = path(for: filename)
+      let path = taken.contains(plain) ? self.path(for: filename, marked: "\(index)") : plain
+      taken.insert(path)
+      return path
+    }
+  }
+
   /// The path, below the cloud's folder, of the file with the given name.
   public func path(for filename: String) -> String {
     path(for: filename, marked: "")
