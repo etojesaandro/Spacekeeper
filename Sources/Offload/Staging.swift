@@ -23,7 +23,7 @@ struct Staging: Sendable {
   }
 
   /// The item as a consignment, with its files lying in a folder of their own.
-  func consignment(of item: MediaItem) async throws -> Consignment {
+  func consignment(of item: MediaItem, aim: Aim) async throws -> Consignment {
     let found = PHAsset.fetchAssets(withLocalIdentifiers: [item.id], options: nil)
     guard found.count > 0 else {
       throw MissingOriginal()
@@ -77,7 +77,8 @@ struct Staging: Sendable {
       return try Consignment(
         item: item,
         stamp: asset.modificationDate ?? .distantPast,
-        parcels: parcels
+        parcels: parcels,
+        aim: aim
       )
     } catch {
       try? FileManager.default.removeItem(at: place)
@@ -152,6 +153,38 @@ struct PhotoBin: Sendable {
   /// alone, because the cloud holds the earlier version of it.
   ///
   /// - Returns: The consignments whose originals were left for that reason.
+  /// Removes the items from the library, of which no copy need exist anywhere.
+  ///
+  /// An item the library changed since the survey read it is left alone, as
+  /// it is no longer the item the user looked at.
+  ///
+  /// - Returns: The items that were removed.
+  func delete(_ items: [MediaItem]) async throws -> [MediaItem] {
+    let found = PHAsset.fetchAssets(withLocalIdentifiers: items.map { $0.id }, options: nil)
+    var changes: [String: Date] = [:]
+    for index in 0..<found.count {
+      let asset = found.object(at: index)
+      changes[asset.localIdentifier] = asset.modificationDate ?? .distantPast
+    }
+    let going = items.filter { item in
+      changes[item.id].map { item.unchanged(since: $0) } ?? false
+    }
+    let ids = going.map { $0.id }
+    guard !ids.isEmpty else {
+      return []
+    }
+    do {
+      try await PHPhotoLibrary.shared().performChanges {
+        PHAssetChangeRequest.deleteAssets(
+          PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+        )
+      }
+    } catch let error as PHPhotosError where error.code == .userCancelled {
+      throw DeletionDeclined()
+    }
+    return going
+  }
+
   func discard(_ safe: [Consignment]) async throws -> [Consignment] {
     let found = PHAsset.fetchAssets(withLocalIdentifiers: safe.map { $0.id }, options: nil)
     var changes: [String: Date] = [:]

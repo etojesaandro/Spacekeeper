@@ -9,18 +9,26 @@ public struct Consignment: Codable, Sendable, Equatable, Identifiable {
   private let item: MediaItem
   private let stamp: Date
   private let parcels: [Parcel]
+  private let aim: Aim
 
   /// - Parameters:
   ///   - item: The library item the files belong to.
   ///   - stamp: When the library last changed the item, read as its files were taken.
   ///   - parcels: Its files; there must be at least one.
-  public init(item: MediaItem, stamp: Date, parcels: [Parcel]) throws {
+  ///   - aim: What is to become of the original once the cloud holds it.
+  public init(item: MediaItem, stamp: Date, parcels: [Parcel], aim: Aim) throws {
     guard !parcels.isEmpty else {
       throw NothingToOffload()
     }
     self.item = item
     self.stamp = stamp
     self.parcels = parcels
+    self.aim = aim
+  }
+
+  /// Whether the original is to leave the device once the cloud holds it.
+  public func leaves() -> Bool {
+    aim == .move
   }
 
   /// The library's identifier of the item; lists require a readable `id`.
@@ -66,14 +74,24 @@ public struct Consignment: Codable, Sendable, Equatable, Identifiable {
   /// The same consignment with each file replaced by what the change makes of it.
   func with(_ change: (Parcel) -> Parcel) -> Consignment {
     // The files were checked when the consignment was first made.
-    Consignment(item: item, stamp: stamp, checked: parcels.map(change))
+    Consignment(item: item, stamp: stamp, checked: parcels.map(change), aim: aim)
   }
 
-  private init(item: MediaItem, stamp: Date, checked parcels: [Parcel]) {
+  private init(item: MediaItem, stamp: Date, checked parcels: [Parcel], aim: Aim) {
     self.item = item
     self.stamp = stamp
     self.parcels = parcels
+    self.aim = aim
   }
+}
+
+/// What is to become of an original once the cloud holds a copy of it.
+public enum Aim: Codable, Sendable, Equatable {
+  /// It leaves the device.
+  case move
+
+  /// It stays on the device as well.
+  case copy
 }
 
 /// Where a consignment stands as a whole.

@@ -11,7 +11,7 @@ import UIKit
 struct Closeup: View {
   private let item: MediaItem
   private let away: Bool
-  private let move: () -> Void
+  private let act: (Deed) -> Void
   @ViewState private var pictures: [UIImage] = []
   @ViewState private var players: [AVPlayer] = []
   @ViewState private var blank = false
@@ -20,11 +20,11 @@ struct Closeup: View {
   /// - Parameters:
   ///   - item: The item to show.
   ///   - away: Whether it is already on its way to the cloud.
-  ///   - move: Called when the user decides to move it.
-  init(item: MediaItem, away: Bool, move: @escaping () -> Void) {
+  ///   - act: Told what the user decides to do with it.
+  init(item: MediaItem, away: Bool, act: @escaping (Deed) -> Void) {
     self.item = item
     self.away = away
-    self.move = move
+    self.act = act
   }
 
   var body: some View {
@@ -50,17 +50,35 @@ struct Closeup: View {
           } else {
             Button {
               dismiss()
-              move()
+              act(.move)
             } label: {
-              Text("Upload, verify, then delete")
+              Text("Move to Yandex Disk")
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            HStack {
+              Button {
+                dismiss()
+                act(.copy)
+              } label: {
+                Text("Copy to Yandex Disk")
+                  .frame(maxWidth: .infinity)
+              }
+              .buttonStyle(.bordered)
+              Button(role: .destructive) {
+                dismiss()
+                act(.delete)
+              } label: {
+                Text("Delete only")
+                  .frame(maxWidth: .infinity)
+              }
+              .buttonStyle(.bordered)
+            }
             Text(
-              "The upload goes on if you leave the app. Nothing is deleted from this iPhone "
-                + "until Yandex Disk confirms an identical copy, and iOS will ask you to "
-                + "confirm the deletion."
+              "Move uploads it, checks that Yandex Disk has an identical copy, then deletes "
+                + "it here. Copy uploads it and keeps it here. Delete only removes it from "
+                + "this iPhone without a copy. iOS asks you to confirm every deletion."
             )
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -192,4 +210,16 @@ private struct Screening: UIViewControllerRepresentable {
 /// AVFoundation documents it as safe to read from any; this says so.
 private struct LentVideo: @unchecked Sendable {
   let asset: AVAsset
+}
+
+/// What the user decides to do with library items.
+enum Deed {
+  /// Upload, verify, then delete from this iPhone.
+  case move
+
+  /// Upload and keep on this iPhone as well.
+  case copy
+
+  /// Delete from this iPhone without a copy.
+  case delete
 }

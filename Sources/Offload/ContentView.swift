@@ -63,7 +63,7 @@ struct ContentView: View {
                 Text(
                   marked.isEmpty
                     ? "Nothing selected"
-                    : "Move \(marked.count) · \(size(of: marked))"
+                    : "\(marked.count) selected · \(size(of: marked))"
                 )
                 .frame(maxWidth: .infinity)
               }
@@ -114,32 +114,31 @@ struct ContentView: View {
     }
     .sheet(isPresented: Binding(get: { !viewed.isEmpty }, set: { _ in viewed = [] })) {
       if let item = viewed.first {
-        Closeup(item: item, away: uploads.queue.contains { $0.id == item.id }) {
-          Task {
-            await uploads.begin([item])
-          }
+        Closeup(item: item, away: uploads.queue.contains { $0.id == item.id }) { deed in
+          carry(out: deed, on: [item])
         }
       }
     }
     .confirmationDialog(
-      picked.count == 1 ? "Move to Yandex Disk?" : "Move \(picked.count) items to Yandex Disk?",
+      picked.count == 1 ? picked[0].name : "\(picked.count) items · \(size(of: picked))",
       isPresented: Binding(get: { !picked.isEmpty }, set: { _ in picked = [] }),
       titleVisibility: .visible,
       presenting: picked.isEmpty ? nil : picked
     ) { items in
-      Button("Upload, verify, then delete") {
-        Task {
-          selecting = false
-          chosen = []
-          await uploads.begin(items)
-        }
+      Button("Move to Yandex Disk") {
+        carry(out: .move, on: items)
       }
-    } message: { items in
+      Button("Copy to Yandex Disk") {
+        carry(out: .copy, on: items)
+      }
+      Button("Delete only", role: .destructive) {
+        carry(out: .delete, on: items)
+      }
+    } message: { _ in
       Text(
-        "\(items.count == 1 ? items[0].name : "\(items.count) items"), \(size(of: items)). "
-          + "The upload goes on if you leave the app. Nothing is deleted from this iPhone "
-          + "until Yandex Disk confirms an identical copy, and iOS will ask you once to "
-          + "confirm the deletion."
+        "Move uploads, checks that Yandex Disk has identical copies, then deletes here. "
+          + "Copy uploads and keeps them here. Delete only removes them from this iPhone "
+          + "without a copy. iOS asks you to confirm every deletion."
       )
     }
     .alert(
@@ -197,6 +196,21 @@ struct ContentView: View {
         survey.arrange(for: period, by: order)
       } pick: { item in
         viewed = [item]
+      }
+    }
+  }
+
+  private func carry(out deed: Deed, on items: [MediaItem]) {
+    Task {
+      selecting = false
+      chosen = []
+      switch deed {
+      case .move:
+        await uploads.begin(items, aim: .move)
+      case .copy:
+        await uploads.begin(items, aim: .copy)
+      case .delete:
+        await uploads.delete(items)
       }
     }
   }

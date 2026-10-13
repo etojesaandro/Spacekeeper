@@ -26,6 +26,7 @@ final class Uploads {
   @ObservationIgnored private var quiet = false
   @ObservationIgnored private var owed: [() -> Void] = []
   @ObservationIgnored private var freeing = false
+  @ObservationIgnored private var copied: [Consignment] = []
   private let outbox: Outbox
   private let staging: Staging
   private let bin: PhotoBin
@@ -75,6 +76,7 @@ final class Uploads {
   func wake() async {
     await outbox.advance()
     await look()
+    told()
   }
 
   /// Looks again while the user is watching, and ends the move if that finished it.
@@ -98,7 +100,11 @@ final class Uploads {
   }
 
   /// Lays the items ready and hands them to the outbox.
-  func begin(_ items: [MediaItem]) async {
+  ///
+  /// - Parameters:
+  ///   - items: What to upload.
+  ///   - aim: Whether the items leave this iPhone once the Disk holds them.
+  func begin(_ items: [MediaItem], aim: Aim) async {
     stage = .working(headline: "Preparing", step: "")
     do {
       _ = try token.value()
@@ -114,7 +120,7 @@ final class Uploads {
         step: "Preparing for upload"
       )
       do {
-        try await outbox.accept(try await staging.consignment(of: item))
+        try await outbox.accept(try await staging.consignment(of: item, aim: aim))
       } catch {
         log.error("\(item.name, privacy: .public): \(error.localizedDescription, privacy: .public)")
         troubles.append("\(item.name): \(error.localizedDescription)")
@@ -124,6 +130,35 @@ final class Uploads {
     stage = troubles.isEmpty
       ? .idle
       : .done(title: "Not everything was queued", text: troubles.joined(separator: "\n\n"))
+  }
+
+  /// Removes items from the library without copying them anywhere, with the user's consent.
+  func delete(_ items: [MediaItem]) async {
+    log.notice("asking to delete \(items.count) items of which no copy is made")
+    do {
+      let gone = try await bin.delete(items)
+      survey.forget(gone)
+      let size = gone.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))
+      let left = items.count - gone.count
+      log.notice("deleted \(gone.count) items without a copy, left \(left)")
+      stage = .done(
+        title: gone.isEmpty ? "Nothing was deleted" : "Deleted",
+        text: (gone.isEmpty
+          ? ""
+          : (gone.count == 1 ? gone[0].name : "\(gone.count) items")
+            + ", \(size), \(gone.count == 1 ? "is" : "are") in Recently Deleted on this "
+            + "iPhone. The space is freed once Recently Deleted is emptied.")
+          + (left == 0
+            ? ""
+            : "\(gone.isEmpty ? "" : "\n\n")\(left) changed since the list was read and "
+              + "stayed. Read the library again to see them as they are now.")
+      )
+    } catch is DeletionDeclined {
+      log.notice("the deletion was declined")
+    } catch {
+      log.error("deletion failed: \(error.localizedDescription, privacy: .public)")
+      stage = .done(title: "Nothing was deleted", text: error.localizedDescription)
+    }
   }
 
   /// Removes from the library the items whose copies are safe, with the user's consent.
@@ -209,7 +244,7 @@ final class Uploads {
 
   /// Items whose copies are proven identical and that wait to be deleted.
   func safe() -> [Consignment] {
-    queue.filter { $0.standing() == .safe }
+    queue.filter { $0.standing() == .safe && $0.leaves() }
   }
 
   /// Items that could not be uploaded.
@@ -265,12 +300,31 @@ final class Uploads {
   /// back later is not met with iOS's question out of the blue, and finds a
   /// button instead.
   private func finish() async {
-    guard open == 0, travelling().isEmpty, case .idle = stage,
+    guard !told(), open == 0, travelling().isEmpty, case .idle = stage,
       UIApplication.shared.applicationState == .active
     else {
       return
     }
     await free()
+  }
+
+  /// Tells of the copies made, once nothing travels any more.
+  ///
+  /// - Returns: Whether there was something to tell.
+  @discardableResult
+  private func told() -> Bool {
+    guard !copied.isEmpty, travelling().isEmpty, case .idle = stage else {
+      return false
+    }
+    let size = copied.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))
+    stage = .done(
+      title: "Copied",
+      text: (copied.count == 1 ? copied[0].original().name : "\(copied.count) items")
+        + ", \(size), \(copied.count == 1 ? "is" : "are") on Yandex Disk and still on "
+        + "this iPhone."
+    )
+    copied = []
+    return true
   }
 
   /// Tells the system it has been heard.
@@ -288,6 +342,13 @@ final class Uploads {
   }
 
   private func look() async {
+    // A copy that has arrived is done with: its original stays where it is.
+    let arrived = await outbox.consignments().filter { $0.standing() == .safe && !$0.leaves() }
+    if !arrived.isEmpty {
+      await outbox.clear(Set(arrived.map { $0.id }))
+      copied += arrived
+      log.notice("copied \(arrived.count) items, which stay on this iPhone")
+    }
     let now = await outbox.consignments()
     if now != queue {
       queue = now

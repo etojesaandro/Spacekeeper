@@ -94,7 +94,8 @@ if CommandLine.arguments.last == "queued" {
             print: try FingerprintOf(file).value(),
             taken: changed
           ),
-        ]
+        ],
+        aim: .copy
       )
     )
     for (tag, status) in await transit.answers() {

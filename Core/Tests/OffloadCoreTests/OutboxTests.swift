@@ -47,7 +47,8 @@ struct OutboxTests {
           local: Int64(5 * names.count)
         ),
         stamp: Date(timeIntervalSince1970: 2),
-        parcels: try names.map { try parcel($0, in: "folder-\(id)") }
+        parcels: try names.map { try parcel($0, in: "folder-\(id)") },
+        aim: .move
       )
     }
 
@@ -774,7 +775,7 @@ struct ConsignmentTests {
   @Test("cannot be made of no files, as nothing would back the original up")
   func empty() {
     let failure = #expect(throws: NothingToOffload.self) {
-      try Consignment(item: item(), stamp: Date(timeIntervalSince1970: 2), parcels: [])
+      try Consignment(item: item(), stamp: Date(timeIntervalSince1970: 2), parcels: [], aim: .move)
     }
 
     #expect(failure?.localizedDescription.contains("no files to upload") == true)
@@ -788,10 +789,12 @@ struct ConsignmentTests {
       parcels: [
         parcel("A.HEIC", 10),
         parcel("A.MOV", 20),
-      ]
+      ],
+      aim: .move
     )
 
     #expect(consignment.bytes() == 30)
+    #expect(consignment.leaves())
     #expect(consignment.original() == item())
   }
 
@@ -800,10 +803,12 @@ struct ConsignmentTests {
     let consignment = try Consignment(
       item: item(),
       stamp: Date(timeIntervalSince1970: 2),
-      parcels: [parcel("A.MOV", 20)]
+      parcels: [parcel("A.MOV", 20)],
+      aim: .copy
     )
 
     #expect(consignment.gone(sent: ["A.MOV": 15]) == 0)
+    #expect(!consignment.leaves())
   }
 
   @Test("knows whether the library changed the item after its files were taken")
@@ -811,7 +816,8 @@ struct ConsignmentTests {
     let consignment = try Consignment(
       item: item(),
       stamp: Date(timeIntervalSince1970: 2),
-      parcels: [parcel("A.MOV", 20)]
+      parcels: [parcel("A.MOV", 20)],
+      aim: .copy
     )
 
     #expect(consignment.unchanged(since: Date(timeIntervalSince1970: 2)))
