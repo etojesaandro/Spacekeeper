@@ -1,13 +1,10 @@
 import Foundation
+import OffloadCable
 import OffloadCore
-
-#if canImport(FoundationNetworking)
-import FoundationNetworking
-#endif
 
 // Backs up the photo library of a plugged-in iPhone into a folder.
 //
-//   swift run offload-backup <folder> [--icloud] [--code <code>]
+//   offload-backup [<folder>] [--icloud] [--code <code>]
 //
 // Open Offload on the phone, choose "Back up to a computer", and give this
 // tool the code the phone shows. Running it again fetches only what is new.
@@ -40,32 +37,61 @@ for (index, argument) in arguments.enumerated() {
     plain.append(argument)
   }
 }
-guard plain.count == 1, flags.isSubset(of: ["--icloud", "--code"]) else {
-  print("Usage: offload-backup <folder> [--icloud] [--code <code>]")
+guard plain.count <= 1, flags.isSubset(of: ["--icloud", "--code"]) else {
+  print("Usage: offload-backup [<folder>] [--icloud] [--code <code>]")
+  print("Without a folder the backup goes into Pictures/iPhone in your home folder.")
   exit(2)
 }
-let folder = URL(fileURLWithPath: plain[0])
+let folder = plain.first.map { URL(fileURLWithPath: $0) }
+  ?? FileManager.default.homeDirectoryForCurrentUser
+  .appendingPathComponent("Pictures")
+  .appendingPathComponent("iPhone")
+print("Backup folder: \(folder.path)")
+// Started by a double click on Windows, the window would vanish with the last words in it.
+#if os(Windows)
+let linger = CommandLine.arguments.count == 1
+#else
+let linger = false
+#endif
 
-// The phone cannot call the computer over the cable, so a local port is led to its hatch.
-let tunnel = Process()
-tunnel.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-tunnel.arguments = ["iproxy", "47811:47810"]
-tunnel.standardOutput = FileHandle.nullDevice
-tunnel.standardError = FileHandle.nullDevice
+/// Ends the tool, leaving its words on screen until Enter when nobody started it from a console.
+func finish(_ status: Int32) -> Never {
+  if linger {
+    print("Press Enter to close.")
+    _ = readLine()
+  }
+  exit(status)
+}
+
+// The phone cannot call the computer, so the tool reaches the phone's hatch through
+// the service that carries connections over the cable.
+#if os(Windows)
+let muxd = Muxd(doorway: LoopbackDoorway(port: 27015, patience: 600))
+let missing = """
+  Apple's cable service is not running. Install "Apple Devices" from the Microsoft Store
+  (or iTunes), plug the iPhone in, unlock it and tap "Trust".
+  """
+#elseif os(macOS)
+let muxd = Muxd(doorway: UnixDoorway(path: "/var/run/usbmuxd", patience: 600))
+let missing = "macOS's cable service does not answer. Restart the Mac and try again."
+#else
+let muxd = Muxd(doorway: UnixDoorway(path: "/var/run/usbmuxd", patience: 600))
+let missing = "usbmuxd is not running. Install it with: sudo apt install usbmuxd"
+#endif
+let phones: [Phone]
 do {
-  try tunnel.run()
+  phones = try muxd.phones()
 } catch {
-  print("Cannot start iproxy: \(error.localizedDescription)")
-  exit(1)
+  print(missing)
+  print("(\(error.localizedDescription))")
+  finish(1)
 }
-defer {
-  tunnel.terminate()
+guard let phone = phones.first else {
+  print("No iPhone is plugged in. Connect it with a cable, unlock it, and tap \"Trust\" if asked.")
+  finish(1)
 }
-try await Task.sleep(for: .milliseconds(700))
-guard tunnel.isRunning else {
-  print("iproxy is needed to reach the phone over the cable and did not start.")
-  print("Install it with: sudo apt install libusbmuxd-tools")
-  exit(1)
+if phones.count > 1 {
+  print("Several iPhones are plugged in; using the first one.")
 }
 
 if code.isEmpty {
@@ -74,16 +100,14 @@ if code.isEmpty {
 }
 // The phone shows the code in two groups, and it may be typed that way.
 code = code.filter { !$0.isWhitespace }
-// A file that has to come from iCloud first may keep the phone silent for a while.
-let patient = URLSessionConfiguration.default
-patient.timeoutIntervalForRequest = 600
 let reach: Reach = flags.contains("--icloud") ? .everything : .device
 let started = Date()
 do {
   let report = try await Backup(
     from: HttpHandset(
-      wire: URLSessionWire(session: URLSession(configuration: patient)),
-      root: URL(string: "http://127.0.0.1:47811/")!,
+      // A file that has to come from iCloud first may keep the phone silent for a while.
+      wire: TunnelWire(muxd: muxd, phone: phone, port: 47810),
+      root: URL(string: "http://iphone/")!,
       code: code,
       reach: reach
     ),
@@ -113,11 +137,13 @@ do {
     print("Stopped early: the phone stopped answering. Is Offload still open on its backup screen?")
   }
   print("Took \(Int(Date().timeIntervalSince(started))) s. Backup folder: \(folder.path)")
-  tunnel.terminate()
-  exit(report.failed.isEmpty && !report.broken ? 0 : 1)
+  finish(report.failed.isEmpty && !report.broken ? 0 : 1)
+} catch let refused as TunnelRefused where refused.unanswered() {
+  print("The iPhone does not answer. Open Offload, then More, then \"Back up to a computer\",")
+  print("keep that screen open, and run this again.")
+  finish(1)
 } catch {
   print("The backup could not start: \(error.localizedDescription)")
   print("Is Offload open on \"Back up to a computer\", and is the code right?")
-  tunnel.terminate()
-  exit(1)
+  finish(1)
 }

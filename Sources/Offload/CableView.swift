@@ -19,10 +19,17 @@ struct CableView: View {
       Section {
         Label("Connect this iPhone to the computer with a cable.", systemImage: "cable.connector")
         VStack(alignment: .leading, spacing: 6) {
-          Label("On the computer, run:", systemImage: "terminal")
-          Text("offload-backup ~/Pictures/iPhone")
+          Label("On the computer, start:", systemImage: "terminal")
+          Text("offload-backup")
             .font(.callout.monospaced())
             .textSelection(.enabled)
+          Text(
+            "It works on Windows, macOS and Linux. Files go into Pictures/iPhone in your "
+              + "home folder, or into a folder named after the command. On Windows, a "
+              + "double click is enough."
+          )
+          .font(.footnote)
+          .foregroundStyle(.secondary)
         }
         VStack(alignment: .leading, spacing: 6) {
           Label("Give it this code:", systemImage: "key")

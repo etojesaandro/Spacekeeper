@@ -38,13 +38,22 @@ let package = Package(
       name: "OffloadProbe",
       dependencies: ["OffloadCore"]
     ),
+    // Talks to a phone over its cable on Linux, macOS and Windows alike.
+    .target(
+      name: "OffloadCable",
+      dependencies: ["OffloadCore"]
+    ),
     .executableTarget(
       name: "OffloadBackup",
-      dependencies: ["OffloadCore"]
+      dependencies: ["OffloadCore", "OffloadCable"]
     ),
     .testTarget(
       name: "OffloadCoreTests",
       dependencies: ["OffloadCore"]
+    ),
+    .testTarget(
+      name: "OffloadCableTests",
+      dependencies: ["OffloadCable", "OffloadCore"]
     ),
   ]
 )

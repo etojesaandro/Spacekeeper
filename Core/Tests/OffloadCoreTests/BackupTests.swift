@@ -210,7 +210,9 @@ struct BackupTests {
 
   @Test(
     "refuses a place outside the backup folder",
-    arguments: ["../outside.bin", "/etc/outside.bin", "2025/../../outside.bin", "2025//x.bin"]
+    arguments: [
+      "../outside.bin", "/etc/outside.bin", "2025/../../outside.bin", "2025//x.bin", "./x.bin",
+    ]
   )
   func outside(path: String) async throws {
     let desk = Desk()
@@ -228,6 +230,33 @@ struct BackupTests {
     #expect(report.failed[0].contains("outside the backup folder"))
     #expect(desk.files().isEmpty)
     #expect(await stock.poured().isEmpty)
+  }
+
+  @Test(
+    "names files so that Windows, macOS and Linux all accept them",
+    arguments: [
+      ("2025/03/a:b.bin", "2025/03/a_b.bin"),
+      ("2025/03/a\\..\\x.bin", "2025/03/a_.._x.bin"),
+      ("2025/03/what?.bin", "2025/03/what_.bin"),
+      ("2025/03/ends.", "2025/03/ends_"),
+      ("2025/03/plain.HEIC", "2025/03/plain.HEIC"),
+    ]
+  )
+  func portable(path: String, kept: String) async throws {
+    let desk = Desk()
+    defer { desk.remove() }
+    let stock = ArrangedStock(
+      items: [item("a")],
+      contents: ["a": [Data("hello".utf8)]],
+      places: ["a": [path]],
+      cut: []
+    )
+
+    let report = try await backup(desk, stock).run()
+
+    #expect(report.failed.isEmpty)
+    #expect(desk.files() == [kept])
+    #expect(desk.text(kept) == "hello")
   }
 
   @Test("stops when the phone stops answering, keeps what it has, and tells the phone nothing")

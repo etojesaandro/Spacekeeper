@@ -10,3 +10,6 @@ DerivedData/
 /xtool
 
 /Core/.build
+/Core/.build-linux
+/Core/.build-macos
+/Core/dist

@@ -1,0 +1,64 @@
+# Builds the backup tool for Windows. Swift cannot build for Windows from
+# Linux yet, so Windows builds it for itself; Linux and macOS builds come
+# from Core/Scripts/pc-tool-builds.sh on the development machine.
+name: PC backup tool for Windows
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "Core/Package.swift"
+      - "Core/Package.resolved"
+      - "Core/Sources/**"
+      - "Core/Tests/**"
+      - ".github/workflows/pc-tool-windows.yml"
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: Core
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: compnerd/gha-setup-swift@9ff1ee4c44888c5817fc14d1b257ac8cabb4935f # v0.5.1
+        with:
+          swift-version: swift-6.4-release
+          swift-build: 6.4-RELEASE
+
+      - name: Build
+        run: |
+          swift build -c release --product offload-backup --static-swift-stdlib
+          $static = $LASTEXITCODE -eq 0
+          if (-not $static) {
+            Write-Host "A static build failed; building against the Swift runtime instead."
+            swift build -c release --product offload-backup
+            if ($LASTEXITCODE -ne 0) { exit 1 }
+          }
+          $bin = swift build -c release --show-bin-path
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Copy-Item "$bin\offload-backup.exe" dist\
+          if (-not $static) {
+            # The runtime lies where swiftCore.dll is found; all of it goes along.
+            $runtime = Split-Path (Get-Command swiftCore.dll).Source
+            Copy-Item "$runtime\*.dll" dist\
+          }
+          Get-ChildItem dist | Format-Table Name, Length
+
+      - name: Check that it starts without Swift installed
+        run: |
+          $env:Path = "C:\Windows\System32;C:\Windows"
+          .\dist\offload-backup.exe --help
+          # An unknown option makes it print how to use it and end with 2.
+          if ($LASTEXITCODE -ne 2) { exit 1 }
+          exit 0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: offload-backup-windows
+          path: Core/dist/
+
+      - name: Test
+        run: swift test

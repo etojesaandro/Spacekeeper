@@ -91,11 +91,8 @@ public struct Backup: Sendable {
     }
     var files: [HeldFile] = []
     for piece in pieces {
-      let levels = piece.path.split(separator: "/", omittingEmptySubsequences: false)
-      guard !piece.path.hasPrefix("/"), !levels.contains(".."), !levels.contains("") else {
-        throw UnsafePath(path: piece.path)
-      }
-      let place = folder.appendingPathComponent(piece.path)
+      let path = try PortablePath(piece.path).value()
+      let place = folder.appendingPathComponent(path)
       let arriving = place.appendingPathExtension("part")
       try FileManager.default.createDirectory(
         at: place.deletingLastPathComponent(),
@@ -116,9 +113,14 @@ public struct Backup: Sendable {
           [.modificationDate: piece.taken],
           ofItemAtPath: place.path
         )
+        // Windows and macOS keep a creation date too; Linux has none to set.
+        try? FileManager.default.setAttributes(
+          [.creationDate: piece.taken],
+          ofItemAtPath: place.path
+        )
       }
       let facts = try FileManager.default.attributesOfItem(atPath: place.path)
-      files.append(HeldFile(path: piece.path, bytes: (facts[.size] as? NSNumber)?.int64Value ?? 0))
+      files.append(HeldFile(path: path, bytes: (facts[.size] as? NSNumber)?.int64Value ?? 0))
     }
     return Held(item: item, files: files)
   }
@@ -207,6 +209,41 @@ public struct Held: Codable, Sendable, Equatable {
 struct HeldFile: Codable, Sendable, Equatable {
   let path: String
   let bytes: Int64
+}
+
+/// A place below a backup's folder, named so that Windows, macOS and Linux all accept it.
+///
+/// The same folder may be carried from one computer to another, so the names
+/// are the same everywhere: a letter that Windows forbids in a file name
+/// becomes an underscore, and so does a name's last dot or space, which
+/// Windows drops. A backslash is a letter like that, so no level can climb out.
+struct PortablePath {
+  private let path: String
+
+  /// - Parameter path: Levels separated by slashes, as the phone names them.
+  init(_ path: String) {
+    self.path = path
+  }
+
+  /// The path to use, with slashes between its levels.
+  ///
+  /// - Throws: `UnsafePath` when the path would lead outside the folder.
+  func value() throws -> String {
+    let forbidden = Set("<>:\"\\|?*")
+    let levels = path.split(separator: "/", omittingEmptySubsequences: false).map { level in
+      var name = String(
+        level.map { forbidden.contains($0) || $0.asciiValue.map { $0 < 32 } == true ? "_" : $0 }
+      )
+      if let last = name.last, last == "." || last == " ", name != "..", name != "." {
+        name = String(name.dropLast()) + "_"
+      }
+      return name
+    }
+    guard !levels.contains(".."), !levels.contains("."), !levels.contains("") else {
+      throw UnsafePath(path: path)
+    }
+    return levels.joined(separator: "/")
+  }
 }
 
 /// The phone named a place for a file that lies outside the backup's folder.
