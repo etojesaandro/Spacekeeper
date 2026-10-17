@@ -677,7 +677,12 @@ struct OutboxTests {
     #expect(await outbox.consignments().map { $0.standing() } == [.safe])
   }
 
-  @Test("finds out again from the cloud what it could not note down")
+  // Windows ignores Unix permissions, so the folder cannot be made read-only there;
+  // the outbox runs on the phone only.
+  @Test(
+    "finds out again from the cloud what it could not note down",
+    .disabled(if: Platform().windows(), "Unix permissions cannot lock a folder on Windows")
+  )
   func cannotNote() async throws {
     let desk = Desk()
     let files = FileManager.default
@@ -854,5 +859,16 @@ struct ManifestTests {
 
     #expect(Manifest(file: file).consignments().isEmpty)
     #expect(FileManager.default.fileExists(atPath: file.path))
+  }
+}
+
+/// The system the tests run on.
+struct Platform {
+  func windows() -> Bool {
+    #if os(Windows)
+    true
+    #else
+    false
+    #endif
   }
 }
