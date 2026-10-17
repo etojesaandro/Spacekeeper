@@ -1,22 +1,25 @@
 import OffloadCore
 import SwiftUI
 
-/// One folder of what Yandex Disk keeps: its folders, then its originals.
+/// One folder of what the cloud keeps: its folders, then its originals.
 ///
-/// It shows what is on the Disk whether or not it is still on this iPhone.
+/// It shows what is in the cloud whether or not it is still on this iPhone.
 struct DiskView: View {
   private let kept: Kept
+  private let cloud: String
   private let path: String
   private let close: () -> Void
   @ViewState private var shelves: [Shelf] = []
   @ViewState private var problem = ""
 
   /// - Parameters:
-  ///   - kept: What Yandex Disk keeps.
+  ///   - kept: What the cloud keeps.
+  ///   - cloud: The cloud's name.
   ///   - path: The folder to show, below the app's own folder; "" is the top.
   ///   - close: Called when the user is done looking.
-  init(kept: Kept, path: String, close: @escaping () -> Void) {
+  init(kept: Kept, cloud: String, path: String, close: @escaping () -> Void) {
     self.kept = kept
+    self.cloud = cloud
     self.path = path
     self.close = close
   }
@@ -43,7 +46,7 @@ struct DiskView: View {
         ContentUnavailableView(
           "Nothing here",
           systemImage: "icloud",
-          description: Text("What you move to Yandex Disk shows up here.")
+          description: Text("What you move to \(cloud) shows up here.")
         )
       } else {
         List {
@@ -51,7 +54,7 @@ struct DiskView: View {
             Section {
               ForEach(shelf.folders(), id: \.self) { folder in
                 NavigationLink {
-                  DiskView(kept: kept, path: folder, close: close)
+                  DiskView(kept: kept, cloud: cloud, path: folder, close: close)
                 } label: {
                   Label(name(of: folder), systemImage: "folder")
                 }
@@ -62,7 +65,7 @@ struct DiskView: View {
             Section {
               ForEach(shelf.originals()) { original in
                 NavigationLink {
-                  KeptCloseup(kept: kept, original: original, close: close)
+                  KeptCloseup(kept: kept, cloud: cloud, original: original, close: close)
                 } label: {
                   KeptRow(kept: kept, original: original)
                 }
@@ -81,7 +84,7 @@ struct DiskView: View {
       }
     } else if !problem.isEmpty {
       ContentUnavailableView {
-        Label("Could not read Yandex Disk", systemImage: "xmark.icloud")
+        Label("Could not read \(cloud)", systemImage: "xmark.icloud")
       } description: {
         Text(problem)
       } actions: {
@@ -98,7 +101,7 @@ struct DiskView: View {
   }
 
   private var title: String {
-    path.isEmpty ? "On Yandex Disk" : name(of: path)
+    path.isEmpty ? "On \(cloud)" : name(of: path)
   }
 
   /// A folder's name for people: a month folder inside a year reads as the month.
@@ -181,6 +184,7 @@ struct KeptCloseup: View {
   }
 
   private let kept: Kept
+  private let cloud: String
   private let original: KeptOriginal
   private let close: () -> Void
   @ViewState private var pictures: [UIImage] = []
@@ -188,11 +192,13 @@ struct KeptCloseup: View {
   @ViewState private var stage = Stage.idle
 
   /// - Parameters:
-  ///   - kept: What Yandex Disk keeps.
+  ///   - kept: What the cloud keeps.
+  ///   - cloud: The cloud's name.
   ///   - original: The original to show.
   ///   - close: Called when the user is done looking.
-  init(kept: Kept, original: KeptOriginal, close: @escaping () -> Void) {
+  init(kept: Kept, cloud: String, original: KeptOriginal, close: @escaping () -> Void) {
     self.kept = kept
+    self.cloud = cloud
     self.original = original
     self.close = close
   }
@@ -208,7 +214,7 @@ struct KeptCloseup: View {
           ContentUnavailableView(
             "No preview",
             systemImage: "eye.slash",
-            description: Text("Yandex Disk has no picture of this file.")
+            description: Text("\(cloud) has no picture of this file.")
           )
         } else {
           ProgressView()
@@ -257,7 +263,7 @@ struct KeptCloseup: View {
     case .back:
       Label("Back in Photos on this iPhone", systemImage: "checkmark.circle.fill")
         .font(.subheadline.weight(.semibold))
-      Text("It stays on Yandex Disk as well.")
+      Text("It stays on \(cloud) as well.")
         .font(.caption)
         .foregroundStyle(.secondary)
     case .idle, .failed:
@@ -285,8 +291,8 @@ struct KeptCloseup: View {
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
         Text(
-          "Downloads it from Yandex Disk, checks the download and adds it to Photos. "
-            + "It stays on Yandex Disk as well."
+          "Downloads it from \(cloud), checks the download and adds it to Photos. "
+            + "It stays on \(cloud) as well."
             + (original.count() > original.parts().count
               ? " Edits made in Photos are not brought back: it returns as it was taken."
               : "")

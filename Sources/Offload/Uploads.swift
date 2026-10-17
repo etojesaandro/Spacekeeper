@@ -4,7 +4,7 @@ import OffloadCore
 import UIKit
 import os
 
-/// The move of library items to Yandex Disk, as the screen follows it.
+/// The move of library items to the chosen cloud, as the screen follows it.
 ///
 /// Items are laid ready and handed to the outbox, the system uploads them
 /// whether the app is open or not, and those proven identical on the Disk
@@ -30,7 +30,7 @@ final class Uploads {
   private let outbox: Outbox
   private let staging: Staging
   private let bin: PhotoBin
-  private let token: KeychainToken
+  private let choice: Choice
   private let survey: Survey
   private let news: AsyncStream<TransitNews>
   private let log = Logger(subsystem: "Offload", category: "uploads")
@@ -39,21 +39,21 @@ final class Uploads {
   ///   - outbox: What remembers the items on their way.
   ///   - staging: What lays items ready for upload.
   ///   - bin: What removes originals from the library.
-  ///   - token: Where the Yandex Disk token is kept.
+  ///   - choice: Which cloud items go to.
   ///   - survey: The ranking, told which items have left the library.
   ///   - news: What the system tells about the uploads.
   init(
     outbox: Outbox,
     staging: Staging,
     bin: PhotoBin,
-    token: KeychainToken,
+    choice: Choice,
     survey: Survey,
     news: AsyncStream<TransitNews>
   ) {
     self.outbox = outbox
     self.staging = staging
     self.bin = bin
-    self.token = token
+    self.choice = choice
     self.survey = survey
     self.news = news
   }
@@ -106,10 +106,11 @@ final class Uploads {
   ///   - aim: Whether the items leave this iPhone once the Disk holds them.
   func begin(_ items: [MediaItem], aim: Aim) async {
     stage = .working(headline: "Preparing", step: "")
-    do {
-      _ = try token.value()
-    } catch {
-      stage = .done(title: "Nothing was uploaded", text: error.localizedDescription)
+    guard choice.account().signedIn() else {
+      stage = .done(
+        title: "Nothing was uploaded",
+        text: "Sign in to \(cloud()) first, under More, then Clouds and accounts."
+      )
       return
     }
     log.notice("begin \(items.count) items, \(items.reduce(0) { $0 + $1.bytes() }) bytes")
@@ -185,7 +186,7 @@ final class Uploads {
           (gone.count == 1 ? gone[0].original().name : "\(gone.count) items")
             + ", \(gone.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))), "
             + (gone.count == 1 ? "is" : "are")
-            + " on Yandex Disk and in Recently Deleted on this iPhone. "
+            + " on \(cloud()) and in Recently Deleted on this iPhone. "
             + "The space is freed once Recently Deleted is emptied."
         )
       }
@@ -235,6 +236,11 @@ final class Uploads {
   /// Puts a result away once the user has read it.
   func acknowledge() {
     stage = .idle
+  }
+
+  /// The name of the cloud items go to.
+  func cloud() -> String {
+    choice.account().name()
   }
 
   /// Items still being uploaded or verified.
@@ -320,7 +326,7 @@ final class Uploads {
     stage = .done(
       title: "Copied",
       text: (copied.count == 1 ? copied[0].original().name : "\(copied.count) items")
-        + ", \(size), \(copied.count == 1 ? "is" : "are") on Yandex Disk and still on "
+        + ", \(size), \(copied.count == 1 ? "is" : "are") on \(cloud()) and still on "
         + "this iPhone."
     )
     copied = []

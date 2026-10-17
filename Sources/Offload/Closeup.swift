@@ -4,12 +4,13 @@ import Photos
 import SwiftUI
 import UIKit
 
-/// One library item seen large, with the way to move it to Yandex Disk.
+/// One library item seen large, with the way to move it to the cloud.
 ///
 /// A photo is shown, a video can be played. What is only in iCloud is
 /// fetched for the look, which may take a moment.
 struct Closeup: View {
   private let item: MediaItem
+  private let cloud: String
   private let away: Bool
   private let act: (Deed) -> Void
   @ViewState private var pictures: [UIImage] = []
@@ -19,10 +20,12 @@ struct Closeup: View {
 
   /// - Parameters:
   ///   - item: The item to show.
+  ///   - cloud: The name of the cloud items go to.
   ///   - away: Whether it is already on its way to the cloud.
   ///   - act: Told what the user decides to do with it.
-  init(item: MediaItem, away: Bool, act: @escaping (Deed) -> Void) {
+  init(item: MediaItem, cloud: String, away: Bool, act: @escaping (Deed) -> Void) {
     self.item = item
+    self.cloud = cloud
     self.away = away
     self.act = act
   }
@@ -45,14 +48,14 @@ struct Closeup: View {
             .foregroundStyle(.secondary)
           }
           if away {
-            Label("On its way to Yandex Disk", systemImage: "arrow.up.circle.fill")
+            Label("On its way to \(cloud)", systemImage: "arrow.up.circle.fill")
               .font(.subheadline.weight(.semibold))
           } else {
             Button {
               dismiss()
               act(.move)
             } label: {
-              Text("Move to Yandex Disk")
+              Text("Move to \(cloud)")
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -62,7 +65,7 @@ struct Closeup: View {
                 dismiss()
                 act(.copy)
               } label: {
-                Text("Copy to Yandex Disk")
+                Text("Copy to \(cloud)")
                   .frame(maxWidth: .infinity)
               }
               .buttonStyle(.bordered)
@@ -76,7 +79,7 @@ struct Closeup: View {
               .buttonStyle(.bordered)
             }
             Text(
-              "Move uploads it, checks that Yandex Disk has an identical copy, then deletes "
+              "Move uploads it, checks that \(cloud) has an identical copy, then deletes "
                 + "it here. Copy uploads it and keeps it here. Delete only removes it from "
                 + "this iPhone without a copy. iOS asks you to confirm every deletion."
             )

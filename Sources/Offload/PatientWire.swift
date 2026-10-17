@@ -27,7 +27,7 @@ struct PatientWire: Wire {
     let started = Date()
     var native = native(request)
     native.timeoutInterval = 30
-    say("Yandex Disk: \(request.method) \(request.url.lastPathComponent)")
+    say("Cloud: \(request.method) \(request.url.lastPathComponent)")
     log.notice("start \(what, privacy: .public)")
     do {
       let (body, answer) = try await session.data(for: native)
@@ -60,7 +60,7 @@ struct PatientWire: Wire {
     // The Disk stays silent after the last byte for roughly two minutes per gigabyte.
     native.timeoutInterval = max(600, Double(size) / 1_073_741_824 * 180)
     let meter = Meter(say: say, log: log)
-    say("Connecting to \(request.url.host() ?? "Yandex Disk")")
+    say("Connecting to \(request.url.host() ?? "the cloud")")
     log.notice("start \(what, privacy: .public), \(size) bytes")
     do {
       let (body, answer) = try await session.upload(for: native, fromFile: file, delegate: meter)
@@ -93,7 +93,7 @@ struct PatientWire: Wire {
     var native = native(request)
     native.timeoutInterval = 600
     let flight = Flight()
-    say("Connecting to \(request.url.host() ?? "Yandex Disk")")
+    say("Connecting to \(request.url.host() ?? "the cloud")")
     log.notice("start \(what, privacy: .public)")
     // A download reports no progress to those who wait for it, so it is asked now and then.
     let say = say
@@ -246,7 +246,7 @@ private final class Meter: NSObject, URLSessionTaskDelegate, Sendable {
         totalBytesSent < totalBytesExpectedToSend
           ? "Uploading: \(totalBytesSent.formatted(.byteCount(style: .file))) of "
             + "\(totalBytesExpectedToSend.formatted(.byteCount(style: .file)))"
-          : "Sent. Waiting for Yandex Disk to confirm"
+          : "Sent. Waiting for the cloud to confirm"
       )
     }
   }

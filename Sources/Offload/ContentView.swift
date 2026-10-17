@@ -7,7 +7,9 @@ struct ContentView: View {
   private let uploads: Uploads
   private let kept: Kept
   private let cable: CableBackup
-  private let token: KeychainToken
+  private let clouds: Clouds
+  private let yandex: YandexAccount
+  private let google: GoogleAccount
   @ViewState private var selecting = false
   @ViewState private var chosen: Set<String> = []
   @ViewState private var picked: [MediaItem] = []
@@ -21,16 +23,28 @@ struct ContentView: View {
 
   /// - Parameters:
   ///   - survey: The library survey to show.
-  ///   - uploads: The move of items to Yandex Disk.
-  ///   - kept: What Yandex Disk keeps.
+  ///   - uploads: The move of items to the chosen cloud.
+  ///   - kept: What the chosen cloud keeps.
   ///   - cable: The backup to a computer over the cable.
-  ///   - token: Where the Yandex Disk token is kept.
-  init(survey: Survey, uploads: Uploads, kept: Kept, cable: CableBackup, token: KeychainToken) {
+  ///   - clouds: Which cloud is chosen, and who is signed in.
+  ///   - yandex: The Yandex Disk account.
+  ///   - google: The Google Drive account.
+  init(
+    survey: Survey,
+    uploads: Uploads,
+    kept: Kept,
+    cable: CableBackup,
+    clouds: Clouds,
+    yandex: YandexAccount,
+    google: GoogleAccount
+  ) {
     self.survey = survey
     self.uploads = uploads
     self.kept = kept
     self.cable = cable
-    self.token = token
+    self.clouds = clouds
+    self.yandex = yandex
+    self.google = google
   }
 
   var body: some View {
@@ -46,13 +60,13 @@ struct ContentView: View {
           }
           ToolbarItem(placement: .topBarTrailing) {
             Menu("More", systemImage: "ellipsis.circle") {
-              Button("On Yandex Disk", systemImage: "icloud") {
+              Button("On \(clouds.name)", systemImage: "icloud") {
                 browsing = true
               }
               Button("Back up to a computer", systemImage: "desktopcomputer") {
                 wiring = true
               }
-              Button("Yandex Disk account", systemImage: "person.crop.circle") {
+              Button("Clouds and accounts", systemImage: "person.crop.circle") {
                 asking = true
               }
               Button("Read the library again", systemImage: "arrow.clockwise") {
@@ -112,7 +126,13 @@ struct ContentView: View {
         await uploads.wake()
       }
     } content: {
-      AccountSheet(token: token, signIn: signIn)
+      AccountSheet(
+        clouds: clouds,
+        yandex: yandex,
+        google: google,
+        signIn: signIn,
+        busy: !uploads.queue.isEmpty
+      )
     }
     .sheet(isPresented: $wiring) {
       NavigationStack {
@@ -123,14 +143,18 @@ struct ContentView: View {
     }
     .sheet(isPresented: $browsing) {
       NavigationStack {
-        DiskView(kept: kept, path: "") {
+        DiskView(kept: kept, cloud: clouds.name, path: "") {
           browsing = false
         }
       }
     }
     .sheet(isPresented: Binding(get: { !viewed.isEmpty }, set: { _ in viewed = [] })) {
       if let item = viewed.first {
-        Closeup(item: item, away: uploads.queue.contains { $0.id == item.id }) { deed in
+        Closeup(
+          item: item,
+          cloud: clouds.name,
+          away: uploads.queue.contains { $0.id == item.id }
+        ) { deed in
           carry(out: deed, on: [item])
         }
       }
@@ -141,10 +165,10 @@ struct ContentView: View {
       titleVisibility: .visible,
       presenting: picked.isEmpty ? nil : picked
     ) { items in
-      Button("Move to Yandex Disk") {
+      Button("Move to \(clouds.name)") {
         carry(out: .move, on: items)
       }
-      Button("Copy to Yandex Disk") {
+      Button("Copy to \(clouds.name)") {
         carry(out: .copy, on: items)
       }
       Button("Delete only", role: .destructive) {
@@ -152,7 +176,7 @@ struct ContentView: View {
       }
     } message: { _ in
       Text(
-        "Move uploads, checks that Yandex Disk has identical copies, then deletes here. "
+        "Move uploads, checks that \(clouds.name) has identical copies, then deletes here. "
           + "Copy uploads and keeps them here. Delete only removes them from this iPhone "
           + "without a copy. iOS asks you to confirm every deletion."
       )

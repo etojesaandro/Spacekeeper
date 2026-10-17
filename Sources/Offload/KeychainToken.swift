@@ -59,7 +59,7 @@ struct KeychainToken: Sendable {
 /// Nobody is signed in yet.
 struct NoToken: LocalizedError {
   var errorDescription: String? {
-    "Sign in to Yandex Disk first, with the account button"
+    "Sign in first, under More, then Clouds and accounts"
   }
 }
 

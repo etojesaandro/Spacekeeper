@@ -139,7 +139,7 @@ struct RankingView: View {
         Text(
           selecting
             ? "Tap the items to move, then use the button below."
-            : "Tap an item to look at it and move it to Yandex Disk, or use Select for several."
+            : "Tap an item to look at it and move it to the cloud, or use Select for several."
         )
       }
     }

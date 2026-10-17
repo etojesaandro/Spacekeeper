@@ -11,15 +11,24 @@ import os
 /// itself and takes no arguments, which is why it builds its own parts.
 @MainActor
 final class AppDelegate: NSObject, UIApplicationDelegate {
-  // The app's scene reads these five to hand them to its views.
-  let token: KeychainToken
+  // The app's scene reads these to hand them to its views.
+  let yandex: YandexAccount
+  let google: GoogleAccount
+  let clouds: Clouds
   let survey: Survey
   let uploads: Uploads
   let kept: Kept
   let cable: CableBackup
 
   override init() {
-    let token = KeychainToken(service: "Offload.YandexDisk")
+    let yandex = YandexAccount(token: KeychainToken(service: "Offload.YandexDisk"))
+    let google = GoogleAccount(
+      // The client ID names the app to Google; it is public, not a secret.
+      client: "951050873125-me2mos7fge65eqt1qr5q3vbv2pefjmhi.apps.googleusercontent.com",
+      refresh: KeychainToken(service: "Offload.GoogleDrive"),
+      wire: PatientWire(session: URLSession(configuration: .default), say: { _ in })
+    )
+    let choice = Choice(accounts: [yandex, google])
     let survey = Survey(
       photos: DevicePhotos(),
       remembered: RememberedItems(
@@ -45,7 +54,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     }
     let (words, pen) = AsyncStream<String>.makeStream()
     let (asked, bell) = AsyncStream<CableNews>.makeStream()
-    self.token = token
+    self.yandex = yandex
+    self.google = google
+    self.clouds = Clouds(choice: choice)
     self.survey = survey
     self.cable = CableBackup(
       stock: PhotoStock(survey: survey, news: bell),
@@ -55,8 +66,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
       port: 47810
     )
     self.kept = Kept(
-      archive: SignedInDisk(
-        token: token,
+      archive: ChosenCloud(
+        choice: choice,
         wire: PatientWire(session: URLSession(configuration: .default)) { text in
           pen.yield(text)
         }
@@ -70,8 +81,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
       outbox: Outbox(
         manifest: Manifest(file: home.appendingPathComponent("manifest.json")),
         store: home.appendingPathComponent("files"),
-        depot: SignedInDisk(
-          token: token,
+        depot: ChosenCloud(
+          choice: choice,
           wire: PatientWire(session: URLSession(configuration: .default), say: { _ in })
         ),
         transit: SystemTransit(
@@ -88,7 +99,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
       ),
       staging: Staging(store: home.appendingPathComponent("files")),
       bin: PhotoBin(),
-      token: token,
+      choice: choice,
       survey: survey,
       news: news
     )

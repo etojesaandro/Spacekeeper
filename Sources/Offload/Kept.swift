@@ -5,7 +5,7 @@ import Photos
 import UIKit
 import os
 
-/// What Yandex Disk keeps, as the screen looks through it and brings it back.
+/// What the chosen cloud keeps, as the screen looks through it and brings it back.
 @MainActor
 @Observable
 final class Kept {

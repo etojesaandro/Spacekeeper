@@ -121,7 +121,7 @@ final class TransitEars: NSObject, URLSessionTaskDelegate, Sendable {
       log.notice("\(tag, privacy: .public): answered with HTTP \(answer.statusCode)")
       news.yield(.landed(tag, answer.statusCode))
     } else {
-      news.yield(.lost(tag, "Yandex Disk gave no answer"))
+      news.yield(.lost(tag, "The cloud gave no answer"))
     }
   }
 

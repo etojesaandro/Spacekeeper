@@ -1,7 +1,7 @@
 import OffloadCore
 import SwiftUI
 
-/// What is on its way to Yandex Disk, and what the user can do about it.
+/// What is on its way to the cloud, and what the user can do about it.
 ///
 /// It stays at the bottom of the screen for as long as anything is being
 /// uploaded, waits to be deleted or could not be uploaded.
@@ -46,7 +46,7 @@ struct QueueBar: View {
         HStack {
           VStack(alignment: .leading, spacing: 2) {
             Text(
-              "\(uploads.safe().count) on Yandex Disk · "
+              "\(uploads.safe().count) on \(uploads.cloud()) · "
                 + size(uploads.safe().reduce(0) { $0 + $1.bytes() })
             )
             .font(.subheadline.weight(.semibold))

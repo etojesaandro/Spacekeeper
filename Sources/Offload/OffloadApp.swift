@@ -11,7 +11,9 @@ struct OffloadApp: App {
         uploads: delegate.uploads,
         kept: delegate.kept,
         cable: delegate.cable,
-        token: delegate.token
+        clouds: delegate.clouds,
+        yandex: delegate.yandex,
+        google: delegate.google
       )
     }
   }
