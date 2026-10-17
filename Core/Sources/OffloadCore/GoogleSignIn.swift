@@ -240,7 +240,7 @@ public struct GoogleRefusal: LocalizedError, CustomStringConvertible, Verdict {
   }
 
   public func stands() -> Bool {
-    response.status < 500 && response.status != 429
+    response.status < 500 && response.status != 429 && !RateLimited(response).value()
   }
 }
 

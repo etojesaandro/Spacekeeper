@@ -18,6 +18,7 @@ final class FakeGoogle: @unchecked Sendable {
   private var issued = 0
   private var valid = ""
   private var heard: [Request] = []
+  private var about = Response(status: 200, body: Data(#"{"storageQuota":{"usage":"0"}}"#.utf8))
   private let pageSize: Int
 
   /// - Parameter pageSize: How many files a search answers with at most per page.
@@ -33,6 +34,11 @@ final class FakeGoogle: @unchecked Sendable {
   /// Makes the access token handed out last stop working, as if it had expired early.
   func revoke() {
     lock.withLock { valid = "revoked" }
+  }
+
+  /// Makes Drive answer questions about the account's quota this way.
+  func quota(status: Int, body: String) {
+    lock.withLock { about = Response(status: status, body: Data(body.utf8)) }
   }
 
   /// How many access tokens the endpoint handed out.
@@ -135,6 +141,8 @@ final class FakeGoogle: @unchecked Sendable {
       }
       let id = request.url.lastPathComponent
       switch route {
+      case "GET www.googleapis.com/drive/v3/about":
+        return about
       case "GET www.googleapis.com/drive/v3/files":
         return search(query["q"] ?? "", page: Int(query["pageToken"] ?? "") ?? 0)
       case "POST www.googleapis.com/drive/v3/files":

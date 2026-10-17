@@ -30,5 +30,23 @@ public struct CloudRefusal: LocalizedError, CustomStringConvertible, Verdict {
   /// A locked file, too many requests or a failing server may answer differently later.
   public func stands() -> Bool {
     response.status < 500 && response.status != 423 && response.status != 429
+      && !RateLimited(response).value()
+  }
+}
+
+/// Whether an answer of HTTP 403 means too many requests rather than no access.
+///
+/// Google Drive tells that a user or the app asked too often with 403, not
+/// 429, and names the reason in the body; such a refusal passes with time.
+struct RateLimited {
+  private let response: Response
+
+  init(_ response: Response) {
+    self.response = response
+  }
+
+  func value() -> Bool {
+    response.status == 403
+      && String(decoding: response.body, as: UTF8.self).lowercased().contains("ratelimitexceeded")
   }
 }

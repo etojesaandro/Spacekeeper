@@ -394,3 +394,145 @@ struct ArrangedWire: Wire {
     answer
   }
 }
+
+@Suite("Space left on Google Drive, checked before an upload")
+struct WithinDriveQuotaTests {
+  private func depot(_ google: FakeGoogle) -> WithinDriveQuota {
+    let api = GoogleApi(
+      bearer: GoogleBearer(
+        tokens: GoogleTokens(client: client, wire: google.wire()),
+        refresh: KeptRefresh("lasting")
+      ),
+      wire: google.wire()
+    )
+    return WithinDriveQuota(GoogleDrive(api: api), api: api)
+  }
+
+  @Test("refuses a file larger than the space left, before opening an upload")
+  func full() async throws {
+    let google = FakeGoogle()
+    google.quota(status: 200, body: #"{"storageQuota":{"limit":"100","usage":"95"}}"#)
+
+    let refusal = await #expect(throws: CloudFull.self) {
+      try await depot(google).door(for: "2024/05/a.MOV", bytes: 6)
+    }
+
+    #expect(refusal?.description == "2024/05/a.MOV is 6 bytes, but this Google Drive has only 5 bytes free")
+    #expect(google.tree().isEmpty)
+  }
+
+  @Test("opens an upload for a file that exactly fills the space left")
+  func fits() async throws {
+    let google = FakeGoogle()
+    google.quota(status: 200, body: #"{"storageQuota":{"limit":"100","usage":"95"}}"#)
+
+    let door = try await depot(google).door(for: "2024/05/a.MOV", bytes: 5)
+
+    #expect(door.method == "PUT")
+  }
+
+  @Test("lets any file pass on an account without a limit")
+  func unlimited() async throws {
+    let google = FakeGoogle()
+    google.quota(status: 200, body: #"{"storageQuota":{"usage":"999999"}}"#)
+
+    let door = try await depot(google).door(for: "2024/05/a.MOV", bytes: 1 << 40)
+
+    #expect(door.method == "PUT")
+  }
+
+  @Test("leaves the decision to the upload when Drive will not tell the quota")
+  func untold() async throws {
+    let google = FakeGoogle()
+    google.quota(status: 403, body: #"{"error":{"code":403,"message":"insufficient scope"}}"#)
+
+    let door = try await depot(google).door(for: "2024/05/a.MOV", bytes: 5)
+
+    #expect(door.method == "PUT")
+  }
+
+  @Test("asks only for the quota's limit and usage")
+  func fields() async throws {
+    let google = FakeGoogle()
+
+    _ = try await depot(google).door(for: "2024/05/a.MOV", bytes: 5)
+
+    let asked = google.requests().first { $0.url.path == "/drive/v3/about" }
+    #expect(asked?.url.query?.contains("fields=storageQuota") == true)
+  }
+}
+
+@Suite("Refusals of Google that pass with time")
+struct RateLimitTests {
+  @Test(
+    "asks again when Google says a user or the app asked too often",
+    arguments: [
+      #"{"error":{"code":403,"errors":[{"reason":"userRateLimitExceeded"}]}}"#,
+      #"{"error":{"code":403,"errors":[{"reason":"rateLimitExceeded"}]}}"#,
+    ]
+  )
+  func limited(body: String) async throws {
+    let google = FakeGoogle()
+    google.quota(status: 200, body: #"{"storageQuota":{"limit":"100","usage":"0"}}"#)
+    let refusal = try await refused(google, status: 403, body: body)
+
+    #expect(refusal.stands() == false)
+  }
+
+  @Test("takes a refusal for a full Drive as final")
+  func storage() async throws {
+    let refusal = try await refused(
+      FakeGoogle(),
+      status: 403,
+      body: #"{"error":{"code":403,"errors":[{"reason":"storageQuotaExceeded"}]}}"#
+    )
+
+    #expect(refusal.stands() == true)
+  }
+
+  /// The refusal a kept file meets when Drive answers its upload this way.
+  private func refused(_ google: FakeGoogle, status: Int, body: String) async throws -> any Verdict {
+    let refused = RefusingWire(status: status, body: body)
+    let drive = GoogleDrive(
+      api: GoogleApi(
+        bearer: GoogleBearer(
+          tokens: GoogleTokens(client: client, wire: google.wire()),
+          refresh: KeptRefresh("lasting")
+        ),
+        wire: refused
+      )
+    )
+    do {
+      _ = try await drive.door(for: "2024/05/a.MOV", bytes: 5)
+    } catch let verdict as any Verdict {
+      return verdict
+    }
+    throw NoVerdict()
+  }
+}
+
+/// A network on which every request is refused the same way.
+struct RefusingWire: Wire {
+  private let status: Int
+  private let body: String
+
+  init(status: Int, body: String) {
+    self.status = status
+    self.body = body
+  }
+
+  func response(to request: Request) async throws -> Response {
+    Response(status: status, body: Data(body.utf8))
+  }
+
+  func response(to request: Request, sending file: URL) async throws -> Response {
+    Response(status: status, body: Data(body.utf8))
+  }
+
+  func response(to request: Request, saving file: URL) async throws -> Response {
+    Response(status: status, body: Data())
+  }
+}
+
+/// The code under test failed without a verdict.
+struct NoVerdict: Error {}

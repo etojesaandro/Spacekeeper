@@ -27,10 +27,12 @@ public struct WithinAllowance: Depot {
       let allowance = try? JSONDecoder().decode(Allowance.self, from: limits.body)
     {
       guard bytes <= allowance.largest else {
-        throw TooLargeForCloud(name: name, size: bytes, limit: allowance.largest)
+        throw TooLargeForCloud(
+          name: name, size: bytes, limit: allowance.largest, cloud: "Yandex Disk")
       }
       guard bytes <= allowance.total - allowance.used else {
-        throw CloudFull(name: name, size: bytes, free: allowance.total - allowance.used)
+        throw CloudFull(
+          name: name, size: bytes, free: allowance.total - allowance.used, cloud: "Yandex Disk")
       }
     }
     return try await origin.door(for: name, bytes: bytes)
@@ -50,15 +52,17 @@ public struct TooLargeForCloud: LocalizedError, CustomStringConvertible, Verdict
   private let name: String
   private let size: Int64
   private let limit: Int64
+  private let cloud: String
 
-  init(name: String, size: Int64, limit: Int64) {
+  init(name: String, size: Int64, limit: Int64, cloud: String) {
     self.name = name
     self.size = size
     self.limit = limit
+    self.cloud = cloud
   }
 
   public var description: String {
-    "\(name) is \(Bytes(size)), but this Yandex Disk account accepts files up to \(Bytes(limit))"
+    "\(name) is \(Bytes(size)), but this \(cloud) account accepts files up to \(Bytes(limit))"
   }
 
   public var errorDescription: String? {
@@ -71,15 +75,17 @@ public struct CloudFull: LocalizedError, CustomStringConvertible, Verdict {
   private let name: String
   private let size: Int64
   private let free: Int64
+  private let cloud: String
 
-  init(name: String, size: Int64, free: Int64) {
+  init(name: String, size: Int64, free: Int64, cloud: String) {
     self.name = name
     self.size = size
     self.free = free
+    self.cloud = cloud
   }
 
   public var description: String {
-    "\(name) is \(Bytes(size)), but this Yandex Disk has only \(Bytes(free)) free"
+    "\(name) is \(Bytes(size)), but this \(cloud) has only \(Bytes(free)) free"
   }
 
   public var errorDescription: String? {

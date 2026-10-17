@@ -99,7 +99,7 @@ struct GoogleAccount: Account {
   }
 
   func depot(through wire: any Wire) throws -> any Depot {
-    try drive(through: wire)
+    WithinDriveQuota(try drive(through: wire), api: GoogleApi(bearer: bearer, wire: wire))
   }
 
   func archive(through wire: any Wire) throws -> any Archive {
