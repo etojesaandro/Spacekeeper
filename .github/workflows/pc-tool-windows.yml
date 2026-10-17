@@ -25,8 +25,8 @@ jobs:
 
       - uses: compnerd/gha-setup-swift@9ff1ee4c44888c5817fc14d1b257ac8cabb4935f # v0.5.1
         with:
-          swift-version: swift-6.4-release
-          swift-build: 6.4-RELEASE
+          swift-version: swift-6.4.1-release
+          swift-build: 6.4.1-RELEASE
 
       - name: Build
         run: |
