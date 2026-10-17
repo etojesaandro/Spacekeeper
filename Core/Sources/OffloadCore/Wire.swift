@@ -45,9 +45,25 @@ public struct Request: Sendable, Equatable {
 public struct Response: Sendable {
   public let status: Int
   public let body: Data
+  private let headers: [String: String]
 
-  public init(status: Int, body: Data) {
+  /// - Parameters:
+  ///   - status: HTTP status.
+  ///   - body: What came back.
+  ///   - headers: HTTP headers, named in any case.
+  public init(status: Int, body: Data, headers: [String: String]) {
     self.status = status
     self.body = body
+    self.headers = headers
+  }
+
+  /// A response whose headers nobody needs.
+  public init(status: Int, body: Data) {
+    self.init(status: status, body: body, headers: [:])
+  }
+
+  /// The value of the header, whatever case it is named in; empty when it is missing.
+  public func header(_ name: String) -> String {
+    headers.first { $0.key.caseInsensitiveCompare(name) == .orderedSame }?.value ?? ""
   }
 }

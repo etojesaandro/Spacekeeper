@@ -78,7 +78,8 @@ public actor Outbox {
   /// The sending of a file ended with the cloud's answer.
   public func landed(_ name: String, status: Int) async {
     switch status {
-    case 201, 202:
+    // Yandex Disk answers 201 or 202; Google Drive 200 when a file is replaced, else 201.
+    case 200, 201, 202:
       mark(name) { $0.leg == .staged || $0.leg == .sent ? $0.on(.delivered) : $0 }
     case 413:
       mark(name) { $0.on(.failed("Yandex Disk refused it as too large for this account")) }

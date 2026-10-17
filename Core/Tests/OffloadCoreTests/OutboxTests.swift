@@ -95,8 +95,11 @@ struct OutboxTests {
     #expect(await outbox.consignments().map { $0.standing() } == [.travelling])
   }
 
-  @Test("counts a file as safe once the cloud reports the very same content")
-  func safe() async throws {
+  @Test(
+    "counts a file as safe once the cloud reports the very same content",
+    arguments: [200, 201, 202]
+  )
+  func safe(status: Int) async throws {
     let desk = Desk()
     defer { desk.remove() }
     let transit = RecordedTransit()
@@ -104,7 +107,7 @@ struct OutboxTests {
     try await outbox.accept(try desk.consignment("a", ["A.MOV"]))
 
     await transit.end("A.MOV")
-    await outbox.landed("A.MOV", status: 201)
+    await outbox.landed("A.MOV", status: status)
 
     #expect(await outbox.consignments().map { $0.standing() } == [.safe])
     #expect(!desk.lying("folder-a/A.MOV"))

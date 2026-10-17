@@ -169,7 +169,13 @@ struct PatientWire: Wire {
     guard let http = answer as? HTTPURLResponse else {
       throw URLError(.badServerResponse)
     }
-    return Response(status: http.statusCode, body: body)
+    return Response(
+      status: http.statusCode,
+      body: body,
+      headers: http.allHeaderFields.reduce(into: [String: String]()) { all, pair in
+        all["\(pair.key)"] = "\(pair.value)"
+      }
+    )
   }
 }
 
