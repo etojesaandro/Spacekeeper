@@ -289,8 +289,11 @@ struct CloudViewer: View {
       page: { original, _ in
         CloudPage(kept: kept, original: original)
       },
-      bar: { original in
-        actions(for: original)
+      bar: { original, inform in
+        ActionBar {
+          actions(for: original)
+          ActionButton("Info", symbol: "info.circle", tint: .primary, action: inform)
+        }
       },
       info: facts
     )
@@ -313,12 +316,15 @@ struct CloudViewer: View {
         .foregroundStyle(.green)
         .frame(maxWidth: .infinity, minHeight: 44)
     case .failed(let reason):
-      VStack(spacing: 8) {
-        Label(reason, systemImage: "exclamationmark.triangle.fill")
-          .font(.footnote)
+      VStack(spacing: 2) {
+        Text(reason)
+          .font(.caption2)
           .foregroundStyle(.orange)
-        restore(original)
+          .lineLimit(2)
+          .multilineTextAlignment(.center)
+        restore(original, after: reason)
       }
+      .frame(maxWidth: .infinity)
     case nil:
       if original.parts().isEmpty {
         Text("Photos can take back only photos and videos.")
@@ -331,8 +337,13 @@ struct CloudViewer: View {
     }
   }
 
-  private func restore(_ original: KeptOriginal) -> some View {
-    Button {
+  private func restore(_ original: KeptOriginal, after failure: String = "") -> some View {
+    ActionButton(
+      failure.isEmpty ? (kept.onPhone(original) ? "Restore Again" : "Restore") : "Try Again",
+      symbol: failure.isEmpty ? "square.and.arrow.down" : "exclamationmark.arrow.circlepath",
+      tint: failure.isEmpty ? .accentColor : .orange,
+      spoken: failure.isEmpty ? "Restore to this iPhone" : "Not restored: \(failure). Try again"
+    ) {
       Task {
         stages[original.id] = .working
         do {
@@ -342,15 +353,7 @@ struct CloudViewer: View {
           stages[original.id] = .failed(error.localizedDescription)
         }
       }
-    } label: {
-      Label(
-        kept.onPhone(original) ? "Restore Another Copy" : "Restore to iPhone",
-        systemImage: "square.and.arrow.down"
-      )
-      .frame(maxWidth: .infinity, minHeight: 30)
     }
-    .buttonStyle(.borderedProminent)
-    .controlSize(.large)
   }
 
   private func facts(_ original: KeptOriginal) -> [Fact] {

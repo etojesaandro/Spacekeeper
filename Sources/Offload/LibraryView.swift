@@ -589,38 +589,26 @@ struct SelectionBar: View {
   let act: (Deed) -> Void
 
   var body: some View {
-    VStack(spacing: 10) {
+    VStack(spacing: 6) {
       Text(count == 0 ? "Tap or slide across items" : "\(bytes.formatted(.byteCount(style: .file))) selected")
         .font(.footnote.weight(.semibold).monospacedDigit())
         .foregroundStyle(.secondary)
-      HStack(spacing: 10) {
-        Button(role: .destructive) {
+      ActionBar {
+        ActionButton("Delete", symbol: "trash", tint: .red, spoken: "Delete without a copy") {
           act(.delete)
-        } label: {
-          Label("Delete", systemImage: "trash")
-            .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.bordered)
-        Button {
+        ActionButton("Copy", symbol: "doc.on.doc", tint: .primary, spoken: "Copy to \(cloud)") {
           act(.copy)
-        } label: {
-          Label("Copy", systemImage: "doc.on.doc")
-            .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.bordered)
-        Button {
+        ActionButton("Move", symbol: "icloud.and.arrow.up.fill", spoken: "Move to \(cloud)") {
           act(.move)
-        } label: {
-          Label("Move", systemImage: "icloud.and.arrow.up")
-            .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.borderedProminent)
       }
-      .controlSize(.large)
       .disabled(count == 0)
     }
-    .padding(.horizontal)
-    .padding(.vertical, 10)
+    .padding(.horizontal, 8)
+    .padding(.top, 8)
+    .padding(.bottom, 4)
     .background(.bar)
     .accessibilityElement(children: .contain)
     .accessibilityLabel("Actions for \(count) selected items, to \(cloud)")

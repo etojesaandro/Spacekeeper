@@ -47,47 +47,33 @@ struct LibraryViewer: View {
       page: { item, shown in
         LibraryPage(item: item, shown: shown)
       },
-      bar: { item in
-        actions(for: item)
+      bar: { item, inform in
+        actions(for: item, inform: inform)
       },
       info: facts
     )
   }
 
-  @ViewBuilder private func actions(for item: MediaItem) -> some View {
-    if uploads.queue.contains(where: { $0.id == item.id }) {
-      Label("On its way to \(cloud)", systemImage: "arrow.up.circle.fill")
-        .font(.subheadline.weight(.semibold))
-        .frame(maxWidth: .infinity, minHeight: 44)
-    } else {
-      HStack(spacing: 10) {
-        Button(role: .destructive) {
+  @ViewBuilder private func actions(for item: MediaItem, inform: @escaping () -> Void) -> some View {
+    ActionBar {
+      if uploads.queue.contains(where: { $0.id == item.id }) {
+        Label("On its way to \(cloud)", systemImage: "arrow.up.circle.fill")
+          .font(.subheadline.weight(.semibold))
+          .foregroundStyle(.secondary)
+          .frame(maxWidth: .infinity, minHeight: 44)
+      } else {
+        ActionButton("Delete", symbol: "trash", tint: .red, spoken: "Delete without a copy") {
           dismiss()
           act(.delete, item)
-        } label: {
-          Image(systemName: "trash")
-            .frame(minWidth: 44, minHeight: 30)
         }
-        .buttonStyle(.bordered)
-        .accessibilityLabel("Delete without a copy")
-        Button {
+        ActionButton("Copy", symbol: "doc.on.doc", tint: .primary, spoken: "Copy to \(cloud)") {
           act(.copy, item)
-        } label: {
-          Label("Copy", systemImage: "doc.on.doc")
-            .frame(maxWidth: .infinity, minHeight: 30)
         }
-        .buttonStyle(.bordered)
-        Button {
+        ActionButton("Move", symbol: "icloud.and.arrow.up.fill", spoken: "Move to \(cloud)") {
           act(.move, item)
-        } label: {
-          Label("Move to \(cloud)", systemImage: "icloud.and.arrow.up")
-            .lineLimit(1)
-            .minimumScaleFactor(0.8)
-            .frame(maxWidth: .infinity, minHeight: 30)
         }
-        .buttonStyle(.borderedProminent)
       }
-      .controlSize(.large)
+      ActionButton("Info", symbol: "info.circle", tint: .primary, action: inform)
     }
   }
 
@@ -158,7 +144,10 @@ struct LibraryPage: View {
       await load()
     }
     .onChange(of: shown) { _, now in
-      if !now {
+      // Like Photos, a video plays when it comes on screen and stops when it leaves.
+      if now {
+        players.first?.play()
+      } else {
         players.first?.pause()
       }
     }
@@ -179,6 +168,9 @@ struct LibraryPage: View {
     if item.video {
       players = await video(of: asset).map { AVPlayer(playerItem: AVPlayerItem(asset: $0.asset)) }
       blank = players.isEmpty
+      if shown {
+        players.first?.play()
+      }
       return
     }
     // The still comes first, so there is something to see while the Live Photo loads.

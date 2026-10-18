@@ -1,4 +1,6 @@
 import AVKit
+// The cross-import that gives SwiftUI its video player is not made by this build on its own.
+import _AVKit_SwiftUI
 import PhotosUI
 import SwiftUI
 import UIKit
@@ -11,7 +13,7 @@ struct Pager<Item: Identifiable, Page: View, Bar: View>: View where Item.ID == S
   private let items: [Item]
   private let heading: (Item) -> (title: String, detail: String)
   private let page: (Item, Bool) -> Page
-  private let bar: (Item) -> Bar
+  private let bar: (Item, @escaping () -> Void) -> Bar
   private let info: (Item) -> [Fact]
   @ViewState private var current: String?
   @ViewState private var bars = true
@@ -24,14 +26,14 @@ struct Pager<Item: Identifiable, Page: View, Bar: View>: View where Item.ID == S
   ///   - start: The identifier of the item shown first.
   ///   - heading: The title and the line under it for an item.
   ///   - page: The item's content, told whether it is the one on screen.
-  ///   - bar: The actions for the item on screen.
+  ///   - bar: The actions for the item on screen, given the way to open its info.
   ///   - info: What the info sheet tells about an item.
   init(
     items: [Item],
     start: String,
     heading: @escaping (Item) -> (title: String, detail: String),
     @ViewBuilder page: @escaping (Item, Bool) -> Page,
-    @ViewBuilder bar: @escaping (Item) -> Bar,
+    @ViewBuilder bar: @escaping (Item, @escaping () -> Void) -> Bar,
     info: @escaping (Item) -> [Fact]
   ) {
     self.items = items
@@ -78,9 +80,12 @@ struct Pager<Item: Identifiable, Page: View, Bar: View>: View where Item.ID == S
     }
     .safeAreaInset(edge: .bottom) {
       if bars, let item = shown {
-        bar(item)
-          .padding(.horizontal)
-          .padding(.vertical, 10)
+        bar(item) {
+          informing = true
+        }
+          .padding(.horizontal, 8)
+          .padding(.top, 8)
+          .padding(.bottom, 4)
           .frame(maxWidth: .infinity)
           .background(.bar)
           .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -119,14 +124,9 @@ struct Pager<Item: Identifiable, Page: View, Bar: View>: View where Item.ID == S
       }
       .lineLimit(1)
       Spacer(minLength: 0)
-      Button {
-        informing = true
-      } label: {
-        Image(systemName: "info.circle")
-          .font(.body.weight(.semibold))
-          .frame(width: 44, height: 44)
-      }
-      .accessibilityLabel("Info")
+      // Keeps the title in the middle, across from the close button.
+      Color.clear
+        .frame(width: 44, height: 44)
     }
     .padding(.horizontal, 6)
     .background(.bar)
@@ -270,16 +270,70 @@ struct LivePicture: UIViewRepresentable {
 }
 
 /// The system's video player with its usual controls.
-struct Screening: UIViewControllerRepresentable {
+struct Screening: View {
   let player: AVPlayer
 
-  func makeUIViewController(context: Context) -> AVPlayerViewController {
-    let screen = AVPlayerViewController()
-    screen.player = player
-    return screen
+  var body: some View {
+    VideoPlayer(player: player)
+  }
+}
+
+/// A row of actions spread evenly across the bottom, each a symbol with a short word, as in Photos.
+struct ActionBar<Content: View>: View {
+  @ViewBuilder let content: Content
+
+  var body: some View {
+    HStack(spacing: 0) {
+      content
+    }
+    .frame(maxWidth: .infinity)
+  }
+}
+
+/// One action of an action bar.
+struct ActionButton: View {
+  private let title: String
+  private let symbol: String
+  private let tint: Color
+  private let spoken: String
+  private let action: () -> Void
+  @Environment(\.isEnabled) private var enabled
+
+  /// - Parameters:
+  ///   - title: The short word under the symbol.
+  ///   - symbol: The SF Symbol's name.
+  ///   - tint: The colour of the symbol and the word.
+  ///   - spoken: What VoiceOver says, when the word alone is too short.
+  ///   - action: What the button does.
+  init(
+    _ title: String,
+    symbol: String,
+    tint: Color = .accentColor,
+    spoken: String = "",
+    action: @escaping () -> Void
+  ) {
+    self.title = title
+    self.symbol = symbol
+    self.tint = tint
+    self.spoken = spoken.isEmpty ? title : spoken
+    self.action = action
   }
 
-  func updateUIViewController(_ screen: AVPlayerViewController, context: Context) {
-    screen.player = player
+  var body: some View {
+    Button(action: action) {
+      VStack(spacing: 3) {
+        Image(systemName: symbol)
+          .font(.system(size: 21, weight: .regular))
+          .frame(height: 26)
+        Text(title)
+          .font(.caption2.weight(.medium))
+          .lineLimit(1)
+      }
+      .foregroundStyle(enabled ? tint : Color.secondary)
+      .frame(maxWidth: .infinity, minHeight: 44)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .accessibilityLabel(spoken)
   }
 }
