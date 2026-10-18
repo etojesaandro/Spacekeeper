@@ -1,12 +1,18 @@
 import SwiftUI
+import TipKit
 
 @main
 struct OffloadApp: App {
   @UIApplicationDelegateAdaptor(AppDelegate.self) private var delegate
 
+  init() {
+    // Hints show once each; failing to set them up only leaves them out.
+    try? Tips.configure()
+  }
+
   var body: some Scene {
     WindowGroup {
-      ContentView(
+      RootView(
         survey: delegate.survey,
         uploads: delegate.uploads,
         kept: delegate.kept,

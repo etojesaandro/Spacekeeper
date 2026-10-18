@@ -16,7 +16,10 @@ final class Uploads {
   enum Stage {
     case idle
     case working(headline: String, step: String)
+    /// Something went wrong or needs the user's attention.
     case done(title: String, text: String)
+    /// Something finished as asked.
+    case told(title: String, text: String)
   }
 
   private(set) var stage = Stage.idle
@@ -109,7 +112,7 @@ final class Uploads {
     guard choice.account().signedIn() else {
       stage = .done(
         title: "Nothing was uploaded",
-        text: "Sign in to \(cloud()) first, under More, then Clouds and accounts."
+        text: "Connect \(cloud()) first, with the account button at the top."
       )
       return
     }
@@ -142,9 +145,9 @@ final class Uploads {
       let size = gone.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))
       let left = items.count - gone.count
       log.notice("deleted \(gone.count) items without a copy, left \(left)")
-      stage = .done(
-        title: gone.isEmpty ? "Nothing was deleted" : "Deleted",
-        text: (gone.isEmpty
+      let title = gone.isEmpty ? "Nothing was deleted" : "Deleted"
+      let text =
+        (gone.isEmpty
           ? ""
           : (gone.count == 1 ? gone[0].name : "\(gone.count) items")
             + ", \(size), \(gone.count == 1 ? "is" : "are") in Recently Deleted on this "
@@ -152,8 +155,8 @@ final class Uploads {
           + (left == 0
             ? ""
             : "\(gone.isEmpty ? "" : "\n\n")\(left) changed since the list was read and "
-              + "stayed. Read the library again to see them as they are now.")
-      )
+              + "stayed. Pull down the library to read it again.")
+      stage = left == 0 ? .told(title: title, text: text) : .done(title: title, text: text)
     } catch is DeletionDeclined {
       log.notice("the deletion was declined")
     } catch {
@@ -197,10 +200,8 @@ final class Uploads {
         )
       }
       log.notice("deleted \(gone.count) items, left \(changed.count) that changed")
-      stage = .done(
-        title: gone.isEmpty ? "Nothing was deleted" : "Moved",
-        text: lines.joined(separator: "\n\n")
-      )
+      let (title, text) = (gone.isEmpty ? "Nothing was deleted" : "Moved", lines.joined(separator: "\n\n"))
+      stage = changed.isEmpty ? .told(title: title, text: text) : .done(title: title, text: text)
     } catch is DeletionDeclined {
       log.notice("the deletion was declined")
     } catch {
@@ -323,7 +324,7 @@ final class Uploads {
       return false
     }
     let size = copied.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))
-    stage = .done(
+    stage = .told(
       title: "Copied",
       text: (copied.count == 1 ? copied[0].original().name : "\(copied.count) items")
         + ", \(size), \(copied.count == 1 ? "is" : "are") on \(cloud()) and still on "
