@@ -303,3 +303,58 @@ struct SocketTests {
   }
   #endif
 }
+
+@Suite("Trust between the phone and this computer")
+struct TrustTests {
+  private let phone = Phone(number: 4, serial: "00008030-000A1B2C3D4E5F60")
+
+  @Test("tells that the phone trusts the computer when the service holds a pairing record")
+  func given() throws {
+    let channel = ScriptedChannel(answer: try MuxReply(["PairRecordData": Data([1, 2])]).bytes())
+
+    let trust = Muxd(doorway: ArrangedDoorway([channel])).trust(of: phone)
+
+    #expect(trust == .given)
+    let fields = SentMessage(channel.sent()).fields()
+    #expect(fields["MessageType"] as? String == "ReadPairRecord")
+    #expect(fields["PairRecordID"] as? String == "00008030-000A1B2C3D4E5F60")
+  }
+
+  @Test("asks again without the dash, as the service may file the record that way")
+  func undashed() throws {
+    let first = ScriptedChannel(answer: try MuxReply(["MessageType": "Result", "Number": 2]).bytes())
+    let second = ScriptedChannel(answer: try MuxReply(["PairRecordData": Data([1])]).bytes())
+
+    let trust = Muxd(doorway: ArrangedDoorway([first, second])).trust(of: phone)
+
+    #expect(trust == .given)
+    #expect(SentMessage(second.sent()).fields()["PairRecordID"] as? String == "00008030000A1B2C3D4E5F60")
+  }
+
+  @Test("tells that trust is missing when no name has a pairing record")
+  func missing() throws {
+    let refusals = try (0..<2).map { _ in
+      ScriptedChannel(answer: try MuxReply(["MessageType": "Result", "Number": 2]).bytes())
+    }
+
+    let trust = Muxd(doorway: ArrangedDoorway(refusals)).trust(of: phone)
+
+    #expect(trust == .missing)
+  }
+
+  @Test("cannot tell when the service does not answer the question")
+  func unknown() throws {
+    let trust = Muxd(doorway: ArrangedDoorway([])).trust(of: phone)
+
+    #expect(trust == .unknown)
+  }
+
+  @Test("asks once for a phone whose name has no dash to add")
+  func oldName() throws {
+    let channel = ScriptedChannel(answer: try MuxReply(["MessageType": "Result", "Number": 2]).bytes())
+
+    let trust = Muxd(doorway: ArrangedDoorway([channel])).trust(of: Phone(number: 1, serial: "abc"))
+
+    #expect(trust == .missing)
+  }
+}

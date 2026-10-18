@@ -35,6 +35,33 @@ public struct Muxd: Sendable {
     }
   }
 
+  /// Whether the phone trusts this computer, as far as the service can tell.
+  ///
+  /// A phone talks through its cable only to a computer it trusts, and the
+  /// service keeps a pairing record for each such phone. The service may name
+  /// the phone with or without the dash its identifier has, so both are asked.
+  public func trust(of phone: Phone) -> Trust {
+    var refused = false
+    for name in phone.names() {
+      do {
+        let channel = try doorway.opened()
+        defer {
+          channel.close()
+        }
+        let answer = try MuxMessage(
+          fields: ["MessageType": "ReadPairRecord", "PairRecordID": name]
+        ).exchanged(over: channel)
+        if answer.value(of: "PairRecordData") != nil {
+          return .given
+        }
+        refused = refused || (Number(answer.value(of: "Number")).value() ?? 0) != 0
+      } catch {
+        return .unknown
+      }
+    }
+    return refused ? .missing : .unknown
+  }
+
   /// A channel to a port of the phone.
   public func tunnel(to phone: Phone, port: UInt16) throws -> any Channel {
     let channel = try doorway.opened()
@@ -71,6 +98,29 @@ public struct Phone: Sendable, Equatable {
     self.number = number
     self.serial = serial
   }
+
+  /// The names the service may file the phone's pairing record under.
+  fileprivate func names() -> [String] {
+    let plain = serial.filter { $0 != "-" }
+    // Newer phones have identifiers of 24 letters, written with a dash after the eighth.
+    guard plain.count == 24 else {
+      return [serial]
+    }
+    let dashed = "\(plain.prefix(8))-\(plain.dropFirst(8))"
+    return [serial] + [dashed, plain].filter { $0 != serial }
+  }
+}
+
+/// Whether a phone trusts the computer it is plugged into.
+public enum Trust: Sendable, Equatable {
+  /// The phone trusts the computer.
+  case given
+
+  /// The service holds no pairing record: the phone has not been asked, or said no.
+  case missing
+
+  /// The service could not tell.
+  case unknown
 }
 
 /// One message of the service's protocol: a 16-byte header and a property list.

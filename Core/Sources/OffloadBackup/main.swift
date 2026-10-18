@@ -71,12 +71,27 @@ let missing = """
   Apple's cable service is not running. Install "Apple Devices" from the Microsoft Store
   (or iTunes), plug the iPhone in, unlock it and tap "Trust".
   """
+// The service asks the phone for trust only when Apple's own app opens.
+let untrusted = """
+  The iPhone does not trust this computer yet. With the iPhone plugged in and unlocked,
+  open "Apple Devices" (or iTunes). The iPhone asks "Trust This Computer?": tap Trust and
+  enter its passcode. Apple Devices can be closed afterwards.
+  """
 #elseif os(macOS)
 let muxd = Muxd(doorway: UnixDoorway(path: "/var/run/usbmuxd", patience: 600))
 let missing = "macOS's cable service does not answer. Restart the Mac and try again."
+let untrusted = """
+  The iPhone does not trust this Mac yet. With the iPhone plugged in and unlocked, open
+  Finder and select the iPhone in the sidebar. The iPhone asks "Trust This Computer?":
+  tap Trust and enter its passcode.
+  """
 #else
 let muxd = Muxd(doorway: UnixDoorway(path: "/var/run/usbmuxd", patience: 600))
 let missing = "usbmuxd is not running. Install it with: sudo apt install usbmuxd"
+let untrusted = """
+  The iPhone does not trust this computer yet. Unlock the iPhone, unplug it and plug it in
+  again, then tap Trust and enter its passcode. If it does not ask, run: idevicepair pair
+  """
 #endif
 let phones: [Phone]
 do {
@@ -92,6 +107,15 @@ guard let phone = phones.first else {
 }
 if phones.count > 1 {
   print("Several iPhones are plugged in; using the first one.")
+}
+// Without trust the phone lets nothing through, and the backup would fail for no clear reason.
+if muxd.trust(of: phone) == .missing {
+  print(untrusted)
+  print("Press Enter once the iPhone trusts this computer.")
+  _ = readLine()
+  if muxd.trust(of: phone) == .missing {
+    print("The iPhone still does not seem to trust this computer; trying anyway.")
+  }
 }
 
 if code.isEmpty {
@@ -138,6 +162,10 @@ do {
   }
   print("Took \(Int(Date().timeIntervalSince(started))) s. Backup folder: \(folder.path)")
   finish(report.failed.isEmpty && !report.broken ? 0 : 1)
+} catch is TunnelRefused where muxd.trust(of: phone) == .missing {
+  print(untrusted)
+  print("Then run this again.")
+  finish(1)
 } catch let refused as TunnelRefused where refused.unanswered() {
   print("The iPhone does not answer. Open Offload, then More, then \"Back up to a computer\",")
   print("keep that screen open, and run this again.")
