@@ -104,6 +104,7 @@ struct LibraryBrowser: View {
   private let act: (Deed, [MediaItem]) -> Void
   @ViewState private var view = Lens.all
   @ViewState private var listed: [MediaItem] = []
+  @ViewState private var arranged = false
   @ViewState private var covers: [Period: MediaItem] = [:]
   @ViewState private var selecting = false
   @ViewState private var chosen: Set<String> = []
@@ -168,6 +169,11 @@ struct LibraryBrowser: View {
         }
       }
       .toolbar(selecting ? .hidden : .automatic, for: .tabBar)
+      .safeAreaInset(edge: .bottom) {
+        if period == .always, !selecting {
+          lenses
+        }
+      }
       .safeAreaInset(edge: .bottom) {
         if selecting {
           SelectionBar(
@@ -262,12 +268,14 @@ struct LibraryBrowser: View {
         summary
       }
       .overlay {
-        if listed.isEmpty, findings.items.count > 0 {
+        // Shown only once the items are worked out, and never over the controls.
+        if arranged, listed.isEmpty {
           ContentUnavailableView(
             "Nothing here",
             systemImage: "photo.on.rectangle",
             description: Text(kind.wrappedValue.missing)
           )
+          .allowsHitTesting(false)
         }
       }
     }
@@ -287,17 +295,27 @@ struct LibraryBrowser: View {
         }
       }
       if period == .always, !selecting {
-        Picker("Show", selection: $view) {
-          Text("All").tag(Lens.all)
-          Text("Years").tag(Lens.years)
-          Text("Months").tag(Lens.months)
-        }
-        .pickerStyle(.segmented)
         TipView(SelectionTip())
       }
     }
     .padding(.horizontal)
     .padding(.bottom, 10)
+  }
+
+  /// The choice between items, years and months, floating above the bottom as in Photos.
+  private var lenses: some View {
+    Picker("Show", selection: $view) {
+      Text("Years").tag(Lens.years)
+      Text("Months").tag(Lens.months)
+      Text("All").tag(Lens.all)
+    }
+    .pickerStyle(.segmented)
+    .frame(maxWidth: 300)
+    .padding(6)
+    .background(.regularMaterial, in: Capsule())
+    .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+    .padding(.bottom, 8)
+    .frame(maxWidth: .infinity)
   }
 
   /// The menu that orders and filters what is listed.
@@ -379,6 +397,7 @@ struct LibraryBrowser: View {
   private func arrange() {
     let almanac = Almanac(findings.items, calendar: .current)
     listed = almanac.items(of: period, by: order.wrappedValue).filter(kind.wrappedValue.holds)
+    arranged = true
     guard period == .always else {
       return
     }
@@ -501,6 +520,7 @@ struct SpanCards<Header: View, Destination: View>: View {
   private let covers: [Period: MediaItem]
   private let header: Header
   private let destination: (Span) -> Destination
+  @ViewState private var width: CGFloat = 0
 
   init(
     spans: [Span],
@@ -515,23 +535,32 @@ struct SpanCards<Header: View, Destination: View>: View {
   }
 
   var body: some View {
-    GeometryReader { frame in
-      let side = ((frame.size.width - 16 * 3) / 2).rounded(.down)
-      ScrollView {
-        VStack(alignment: .leading, spacing: 0) {
-          header
-          LazyVGrid(columns: [GridItem(.fixed(side), spacing: 16), GridItem(.fixed(side))], spacing: 16) {
-            ForEach(spans) { span in
-              NavigationLink {
-                destination(span)
-              } label: {
-                card(span, side: side)
-              }
-              .buttonStyle(.plain)
+    let side = ((width > 0 ? width : UIScreen.main.bounds.width) - 16 * 3) / 2
+    ScrollView {
+      VStack(alignment: .leading, spacing: 0) {
+        header
+        LazyVGrid(columns: [GridItem(.fixed(side.rounded(.down)), spacing: 16), GridItem(.fixed(side.rounded(.down)))], spacing: 16) {
+          ForEach(spans) { span in
+            NavigationLink {
+              destination(span)
+            } label: {
+              card(span, side: side.rounded(.down))
             }
+            .buttonStyle(.plain)
           }
-          .padding(.horizontal, 16)
-          .padding(.bottom, 16)
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+      }
+      .background {
+        GeometryReader { frame in
+          Color.clear
+            .onAppear {
+              width = frame.size.width
+            }
+            .onChange(of: frame.size.width) { _, now in
+              width = now
+            }
         }
       }
     }

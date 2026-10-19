@@ -54,6 +54,7 @@ struct CloudFolder: View {
   @ViewState private var shelves: [Shelf] = []
   @ViewState private var problem = ""
   @ViewState private var viewing: [String] = []
+  @ViewState private var width: CGFloat = 0
 
   /// - Parameters:
   ///   - kept: What the cloud keeps.
@@ -93,17 +94,27 @@ struct CloudFolder: View {
           description: Text("What you move or copy to \(cloud) shows up here.")
         )
       } else {
-        GeometryReader { frame in
-          ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-              if !shelf.folders().isEmpty {
-                folders(shelf.folders(), width: frame.size.width)
-              }
-              if !shelf.originals().isEmpty {
-                originals(shelf.originals(), width: frame.size.width)
-              }
+        let width = width > 0 ? width : UIScreen.main.bounds.width
+        ScrollView {
+          VStack(alignment: .leading, spacing: 16) {
+            if !shelf.folders().isEmpty {
+              folders(shelf.folders(), width: width)
             }
-            .padding(.bottom, 16)
+            if !shelf.originals().isEmpty {
+              originals(shelf.originals(), width: width)
+            }
+          }
+          .padding(.bottom, 16)
+          .background {
+            GeometryReader { frame in
+              Color.clear
+                .onAppear {
+                  self.width = frame.size.width
+                }
+                .onChange(of: frame.size.width) { _, now in
+                  self.width = now
+                }
+            }
           }
         }
       }

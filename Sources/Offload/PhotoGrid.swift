@@ -1,5 +1,6 @@
 import OffloadCore
 import SwiftUI
+import UIKit
 
 /// Library items as a grid of square pictures, the way Photos shows them.
 ///
@@ -16,6 +17,7 @@ struct PhotoGrid<Header: View>: View {
   private let open: (MediaItem) -> Void
   private let header: Header
   @ViewState private var sweep: [Sweep] = []
+  @ViewState private var width: CGFloat = 0
 
   /// - Parameters:
   ///   - items: The items, in the order to show them.
@@ -44,37 +46,50 @@ struct PhotoGrid<Header: View>: View {
   }
 
   var body: some View {
-    GeometryReader { frame in
-      let side = side(in: frame.size.width)
-      ScrollView {
-        VStack(alignment: .leading, spacing: 0) {
-          header
-          LazyVGrid(
-            columns: Array(repeating: GridItem(.fixed(side), spacing: gap), count: columns.wrappedValue),
-            spacing: gap
-          ) {
-            ForEach(items) { item in
-              GridCell(
-                item: item,
-                side: side,
-                selecting: selecting,
-                marked: chosen.wrappedValue.contains(item.id),
-                away: away.contains(item.id)
-              )
-              .onTapGesture {
-                tapped(item)
-              }
+    // The scroll view sits right in the navigation stack, so the large title
+    // collapses as the grid scrolls; the grid's width is read from behind it.
+    let side = side(in: width)
+    ScrollView {
+      VStack(alignment: .leading, spacing: 0) {
+        header
+        LazyVGrid(
+          columns: Array(repeating: GridItem(.fixed(side), spacing: gap), count: columns.wrappedValue),
+          spacing: gap
+        ) {
+          ForEach(items) { item in
+            GridCell(
+              item: item,
+              side: side,
+              selecting: selecting,
+              marked: chosen.wrappedValue.contains(item.id),
+              away: away.contains(item.id)
+            )
+            .onTapGesture {
+              tapped(item)
             }
           }
-          .simultaneousGesture(selecting ? slide(side: side) : nil)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // Only the pictures take the pinch and the slide; the header's controls keep their taps.
+        .simultaneousGesture(selecting ? slide(side: side) : nil)
+        .simultaneousGesture(
+          MagnifyGesture()
+            .onEnded { value in
+              regrid(value.magnification)
+            }
+        )
+      }
+      .background {
+        GeometryReader { frame in
+          Color.clear
+            .onAppear {
+              width = frame.size.width
+            }
+            .onChange(of: frame.size.width) { _, now in
+              width = now
+            }
         }
       }
-      .simultaneousGesture(
-        MagnifyGesture()
-          .onEnded { value in
-            regrid(value.magnification)
-          }
-      )
     }
     .sensoryFeedback(.selection, trigger: chosen.wrappedValue.count)
   }
@@ -82,6 +97,8 @@ struct PhotoGrid<Header: View>: View {
   private let gap: CGFloat = 2
 
   private func side(in width: CGFloat) -> CGFloat {
+    // Before the first measure, the screen's width is the best guess.
+    let width = width > 0 ? width : UIScreen.main.bounds.width
     let count = CGFloat(columns.wrappedValue)
     return max(1, ((width - gap * (count - 1)) / count).rounded(.down))
   }
