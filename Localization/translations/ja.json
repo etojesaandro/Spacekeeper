@@ -66,6 +66,7 @@
  "Cancel": "キャンセル",
  "Cancel the uploads?": "アップロードをキャンセルしますか？",
  "Cancel uploads": "アップロードをキャンセル",
+ "Checked against the original. Free up the space from the transfers strip.": "オリジナルと照合済みです。転送バーから容量を解放できます。",
  "Checked before deleting": "削除前に照合",
  "Checked on %@": "%@ で照合済み",
  "Close": "閉じる",
@@ -177,7 +178,6 @@
  "Offload shows what takes the most room and keeps the originals safe elsewhere.": "Offload は容量を最も使っているものを表示し、オリジナルを別の場所に安全に保管します。",
  "Offload weighs every photo and video once; later it only looks at what is new.": "Offload は写真とビデオのサイズを一度だけ測り、その後は新しいものだけを確認します。",
  "Oldest first": "古い順",
- "On its way to %@": "%@ にアップロード中",
  "On this iPhone": "この iPhone 上",
  "Only in iCloud": "iCloud のみ",
  "Open Settings": "設定を開く",
@@ -235,6 +235,7 @@
   "format": "%#@n@を %@ にアップロード中",
   "other": "%lld 項目"
  },
+ "Uploading to %@": "%@ にアップロード中",
  "Uploading: %@ of %@": "アップロード中：%@ / %@",
  "Uploads go on when you leave the app.": "アプリを離れてもアップロードは続きます。",
  "Video": "ビデオ",

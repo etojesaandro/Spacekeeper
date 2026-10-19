@@ -23,14 +23,14 @@ struct TransferStrip: View {
           symbol
             .frame(width: 28, height: 28)
           VStack(alignment: .leading, spacing: 1) {
+            // Shown whole, on as many lines as it takes.
             Text(headline)
               .font(.subheadline.weight(.semibold))
-              .lineLimit(1)
-              .truncationMode(.middle)
+              .fixedSize(horizontal: false, vertical: true)
             Text(detail)
               .font(.caption.monospacedDigit())
               .foregroundStyle(.secondary)
-              .lineLimit(1)
+              .fixedSize(horizontal: false, vertical: true)
           }
           Spacer(minLength: 0)
           if !uploads.safe().isEmpty, uploads.travelling().isEmpty {
@@ -253,7 +253,7 @@ struct TransfersSheet: View {
         Text(note)
           .font(.caption.monospacedDigit())
           .foregroundStyle(.secondary)
-          .lineLimit(3)
+          .fixedSize(horizontal: false, vertical: true)
       }
       Spacer(minLength: 0)
       Image(systemName: symbol)

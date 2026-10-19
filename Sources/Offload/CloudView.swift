@@ -321,7 +321,7 @@ struct CloudViewer: View {
         ProgressView()
         Text(kept.line.isEmpty ? String(localized: "Bringing it back") : kept.line)
           .font(.subheadline.monospacedDigit())
-          .lineLimit(1)
+          .fixedSize(horizontal: false, vertical: true)
       }
       .frame(maxWidth: .infinity, minHeight: 44)
     case .back:

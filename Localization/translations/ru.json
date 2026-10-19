@@ -96,6 +96,7 @@
  "Cancel": "Отменить",
  "Cancel the uploads?": "Отменить загрузки?",
  "Cancel uploads": "Отменить загрузки",
+ "Checked against the original. Free up the space from the transfers strip.": "Сверено с оригиналом. Освободить место можно из полосы передач.",
  "Checked before deleting": "Проверка перед удалением",
  "Checked on %@": "Проверено в облаке «%@»",
  "Close": "Закрыть",
@@ -222,7 +223,6 @@
  "Offload shows what takes the most room and keeps the originals safe elsewhere.": "Offload показывает, что занимает больше всего места, и надёжно хранит оригиналы в другом месте.",
  "Offload weighs every photo and video once; later it only looks at what is new.": "Offload один раз измеряет каждое фото и видео; потом смотрит только новое.",
  "Oldest first": "Сначала старые",
- "On its way to %@": "Загружается в «%@»",
  "On this iPhone": "На этом iPhone",
  "Only in iCloud": "Только в iCloud",
  "Open Settings": "Открыть Настройки",
@@ -283,6 +283,7 @@
   "one": "%lld объект",
   "other": "%lld объекта"
  },
+ "Uploading to %@": "Загрузка в «%@»",
  "Uploading: %@ of %@": "Загрузка: %@ из %@",
  "Uploads go on when you leave the app.": "Загрузки продолжатся, когда вы выйдете из приложения.",
  "Video": "Видео",

@@ -66,6 +66,7 @@
  "Cancel": "取消",
  "Cancel the uploads?": "取消上传？",
  "Cancel uploads": "取消上传",
+ "Checked against the original. Free up the space from the transfers strip.": "已与原件核对。可在传输栏中释放空间。",
  "Checked before deleting": "删除前先核对",
  "Checked on %@": "已在 %@ 中核对",
  "Close": "关闭",
@@ -177,7 +178,6 @@
  "Offload shows what takes the most room and keeps the originals safe elsewhere.": "Offload 显示最占空间的内容，并把原件安全地保存在别处。",
  "Offload weighs every photo and video once; later it only looks at what is new.": "Offload 只测量每张照片和每个视频一次，之后只查看新的内容。",
  "Oldest first": "最早优先",
- "On its way to %@": "正在上传到 %@",
  "On this iPhone": "在这台 iPhone 上",
  "Only in iCloud": "仅在 iCloud 中",
  "Open Settings": "打开设置",
@@ -235,6 +235,7 @@
   "format": "正在将 %#@n@上传到 %@",
   "other": "%lld 项"
  },
+ "Uploading to %@": "正在上传到 %@",
  "Uploading: %@ of %@": "正在上传：%@ / %@",
  "Uploads go on when you leave the app.": "离开应用后上传会继续。",
  "Video": "视频",

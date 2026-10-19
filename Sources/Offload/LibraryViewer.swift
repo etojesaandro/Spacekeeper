@@ -62,11 +62,17 @@ struct LibraryViewer: View {
 
   @ViewBuilder private func actions(for item: MediaItem, inform: @escaping () -> Void) -> some View {
     ActionBar {
-      if uploads.queue.contains(where: { $0.id == item.id }) {
-        Label("On its way to \(cloud)", systemImage: "arrow.up.circle.fill")
-          .font(.subheadline.weight(.semibold))
-          .foregroundStyle(.secondary)
-          .frame(maxWidth: .infinity, minHeight: 44)
+      if let consignment = uploads.queue.first(where: { $0.id == item.id }) {
+        ItemTransfer(consignment: consignment, sent: uploads.sent, cloud: cloud)
+      } else if case .working(_, let step) = uploads.stage {
+        // The item is being laid ready; the queue does not know it yet.
+        HStack(spacing: 10) {
+          ProgressView()
+          Text(step.isEmpty ? String(localized: "Preparing") : step)
+            .font(.subheadline)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, minHeight: 44)
       } else {
         ActionButton("Delete", symbol: "trash", tint: .red, spoken: String(localized: "Delete without a copy")) {
           dismiss()
@@ -256,5 +262,53 @@ struct Loudspeaker {
 
   func close() {
     try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+  }
+}
+
+/// How far one item's move or copy has got, for the viewer that covers the transfers strip.
+struct ItemTransfer: View {
+  let consignment: Consignment
+  let sent: [String: Int64]
+  let cloud: String
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      switch consignment.standing() {
+      case .travelling:
+        let gone = min(consignment.gone(sent: sent), consignment.bytes())
+        Label(
+          String(localized: "Uploading to \(cloud)"),
+          systemImage: "arrow.up.circle.fill"
+        )
+        .font(.subheadline.weight(.semibold))
+        ProgressView(value: Double(gone), total: Double(max(consignment.bytes(), 1)))
+        Text(
+          String(
+            localized: "\(gone.formatted(.byteCount(style: .file))) of \(consignment.bytes().formatted(.byteCount(style: .file)))"
+          )
+        )
+        .font(.caption.monospacedDigit())
+        .foregroundStyle(.secondary)
+      case .safe:
+        Label(String(localized: "Safe on \(cloud)"), systemImage: "checkmark.icloud.fill")
+          .font(.subheadline.weight(.semibold))
+          .foregroundStyle(.green)
+        Text("Checked against the original. Free up the space from the transfers strip.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+      case .failed(let reason):
+        Label("Not uploaded", systemImage: "exclamationmark.triangle.fill")
+          .font(.subheadline.weight(.semibold))
+          .foregroundStyle(.orange)
+        Text(reason)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+          .fixedSize(horizontal: false, vertical: true)
+      }
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(.horizontal, 8)
+    .accessibilityElement(children: .combine)
   }
 }

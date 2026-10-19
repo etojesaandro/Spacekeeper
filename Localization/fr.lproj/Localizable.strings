@@ -27,6 +27,7 @@
 "Cancel" = "Annuler";
 "Cancel the uploads?" = "Annuler les envois ?";
 "Cancel uploads" = "Annuler les envois";
+"Checked against the original. Free up the space from the transfers strip." = "Vérifié par rapport à l’original. Libérez l’espace depuis la barre des transferts.";
 "Checked before deleting" = "Vérifié avant suppression";
 "Checked on %@" = "Vérifié sur %@";
 "Close" = "Fermer";
@@ -116,7 +117,6 @@
 "Offload shows what takes the most room and keeps the originals safe elsewhere." = "Offload montre ce qui prend le plus de place et garde les originaux en sécurité ailleurs.";
 "Offload weighs every photo and video once; later it only looks at what is new." = "Offload pèse chaque photo et vidéo une fois ; ensuite, il ne regarde que les nouveautés.";
 "Oldest first" = "Plus anciens d’abord";
-"On its way to %@" = "En route vers %@";
 "On this iPhone" = "Sur cet iPhone";
 "Only in iCloud" = "Uniquement dans iCloud";
 "Open Settings" = "Ouvrir Réglages";
@@ -170,6 +170,7 @@
 "Unlock the iPhone and tap Trust if it asks." = "Déverrouillez l’iPhone et touchez « Se fier » s’il le demande.";
 "Upload to %@" = "Envoi vers %@";
 "Uploading" = "Envoi en cours";
+"Uploading to %@" = "Envoi vers %@";
 "Uploading: %@ of %@" = "Envoi : %@ sur %@";
 "Uploads go on when you leave the app." = "Les envois continuent quand vous quittez l’app.";
 "Video" = "Vidéo";

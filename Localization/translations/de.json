@@ -76,6 +76,7 @@
  "Cancel": "Abbrechen",
  "Cancel the uploads?": "Uploads abbrechen?",
  "Cancel uploads": "Uploads abbrechen",
+ "Checked against the original. Free up the space from the transfers strip.": "Mit dem Original verglichen. Platz freigeben kannst du über die Übertragungsleiste.",
  "Checked before deleting": "Vor dem Löschen geprüft",
  "Checked on %@": "Auf %@ geprüft",
  "Close": "Schließen",
@@ -192,7 +193,6 @@
  "Offload shows what takes the most room and keeps the originals safe elsewhere.": "Offload zeigt, was den meisten Platz belegt, und bewahrt die Originale sicher woanders auf.",
  "Offload weighs every photo and video once; later it only looks at what is new.": "Offload misst jedes Foto und Video einmal; danach nur noch Neues.",
  "Oldest first": "Älteste zuerst",
- "On its way to %@": "Unterwegs zu %@",
  "On this iPhone": "Auf diesem iPhone",
  "Only in iCloud": "Nur in iCloud",
  "Open Settings": "Einstellungen öffnen",
@@ -251,6 +251,7 @@
   "one": "%lld Objekt",
   "other": "%lld Objekte"
  },
+ "Uploading to %@": "Wird zu %@ hochgeladen",
  "Uploading: %@ of %@": "Upload: %@ von %@",
  "Uploads go on when you leave the app.": "Uploads laufen weiter, wenn du die App verlässt.",
  "Video": "Video",
