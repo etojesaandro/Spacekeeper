@@ -56,7 +56,7 @@ struct Staging: Sendable {
         let seconds = Date().timeIntervalSince(started)
         log.notice(
           """
-          \(name, privacy: .public): \(how, privacy: .public) \(bytes(at: file)) bytes \
+          \(name, privacy: .private(mask: .hash)): \(how, privacy: .public) \(bytes(at: file)) bytes \
           and read them in \(seconds, format: .fixed(precision: 2)) s
           """
         )
@@ -109,7 +109,7 @@ struct Staging: Sendable {
     }
     if refused != 0 {
       log.notice(
-        "\(resource.originalFilename, privacy: .public): no clone, error \(errno), so it is copied"
+        "\(resource.originalFilename, privacy: .private(mask: .hash)): no clone, error \(errno), so it is copied"
       )
       try? FileManager.default.removeItem(at: file)
     }

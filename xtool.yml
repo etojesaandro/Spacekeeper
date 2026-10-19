@@ -1,8 +1,12 @@
 version: 1
 bundleID: com.saa.spacekeeper
 infoPath: Info.plist
-# Translations, one folder per language; Localization/strings.py writes them.
+# Drawn by AppResources/Icon/draw-icon.py.
+iconPath: AppResources/Icon/AppIcon.png
+# Copied into the app: the privacy manifest, and one translation folder per language
+# (Localization/strings.py writes those).
 resources:
+  - AppResources/PrivacyInfo.xcprivacy
   - Localization/en.lproj
   - Localization/ru.lproj
   - Localization/uk.lproj

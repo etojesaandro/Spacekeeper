@@ -28,20 +28,20 @@ struct PatientWire: Wire {
     var native = native(request)
     native.timeoutInterval = 30
     say(String(localized: "Asking the cloud"))
-    log.notice("start \(what, privacy: .public)")
+    log.notice("start \(what, privacy: .private(mask: .hash))")
     do {
       let (body, answer) = try await session.data(for: native)
       let response = try response(body: body, answer: answer)
       let took = Date().timeIntervalSince(started)
       log.notice(
         """
-        done \(what, privacy: .public) status \(response.status) \
+        done \(what, privacy: .private(mask: .hash)) status \(response.status) \
         in \(took, format: .fixed(precision: 1)) s
         """
       )
       return response
     } catch {
-      log.error("failed \(what, privacy: .public): \(error.localizedDescription, privacy: .public)")
+      log.error("failed \(what, privacy: .private(mask: .hash)): \(error.localizedDescription, privacy: .public)")
       throw TransferFailure(
         what: what,
         seconds: Date().timeIntervalSince(started),
@@ -61,14 +61,14 @@ struct PatientWire: Wire {
     native.timeoutInterval = max(600, Double(size) / 1_073_741_824 * 180)
     let meter = Meter(say: say, log: log)
     say(String(localized: "Connecting to \(request.url.host() ?? String(localized: "the cloud"))"))
-    log.notice("start \(what, privacy: .public), \(size) bytes")
+    log.notice("start \(what, privacy: .private(mask: .hash)), \(size) bytes")
     do {
       let (body, answer) = try await session.upload(for: native, fromFile: file, delegate: meter)
       let response = try response(body: body, answer: answer)
       let took = Date().timeIntervalSince(started)
       log.notice(
         """
-        done \(what, privacy: .public) status \(response.status) \
+        done \(what, privacy: .private(mask: .hash)) status \(response.status) \
         in \(took, format: .fixed(precision: 1)) s
         """
       )
@@ -76,7 +76,7 @@ struct PatientWire: Wire {
     } catch {
       let (sent, why) = (meter.summary(), error.localizedDescription)
       log.error(
-        "failed \(what, privacy: .public), \(sent, privacy: .public): \(why, privacy: .public)"
+        "failed \(what, privacy: .private(mask: .hash)), \(sent, privacy: .public): \(why, privacy: .public)"
       )
       throw TransferFailure(
         what: what,
@@ -94,7 +94,7 @@ struct PatientWire: Wire {
     native.timeoutInterval = 600
     let flight = Flight()
     say(String(localized: "Connecting to \(request.url.host() ?? String(localized: "the cloud"))"))
-    log.notice("start \(what, privacy: .public)")
+    log.notice("start \(what, privacy: .private(mask: .hash))")
     // A download reports no progress to those who wait for it, so it is asked now and then.
     let say = say
     let ticker = Task {
@@ -138,13 +138,13 @@ struct PatientWire: Wire {
       let took = Date().timeIntervalSince(started)
       log.notice(
         """
-        done \(what, privacy: .public) status \(response.status) \
+        done \(what, privacy: .private(mask: .hash)) status \(response.status) \
         in \(took, format: .fixed(precision: 1)) s
         """
       )
       return response
     } catch {
-      log.error("failed \(what, privacy: .public): \(error.localizedDescription, privacy: .public)")
+      log.error("failed \(what, privacy: .private(mask: .hash)): \(error.localizedDescription, privacy: .public)")
       throw TransferFailure(
         what: what,
         seconds: Date().timeIntervalSince(started),

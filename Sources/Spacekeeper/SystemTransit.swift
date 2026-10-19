@@ -92,7 +92,7 @@ final class TransitEars: NSObject, URLSessionTaskDelegate, Sendable {
     if moved {
       if percent % 10 == 0 {
         log.notice(
-          "\(tag, privacy: .public): sent \(totalBytesSent) of \(totalBytesExpectedToSend) bytes"
+          "\(tag, privacy: .private(mask: .hash)): sent \(totalBytesSent) of \(totalBytesExpectedToSend) bytes"
         )
       }
       news.yield(.moved(tag, totalBytesSent))
@@ -111,14 +111,14 @@ final class TransitEars: NSObject, URLSessionTaskDelegate, Sendable {
       percents[tag] = nil
     }
     if let error {
-      log.error("\(tag, privacy: .public): \(error.localizedDescription, privacy: .public)")
+      log.error("\(tag, privacy: .private(mask: .hash)): \(error.localizedDescription, privacy: .public)")
       news.yield(
         (error as NSError).code == NSURLErrorCancelled
           ? .dropped(tag)
           : .lost(tag, error.localizedDescription)
       )
     } else if let answer = task.response as? HTTPURLResponse {
-      log.notice("\(tag, privacy: .public): answered with HTTP \(answer.statusCode)")
+      log.notice("\(tag, privacy: .private(mask: .hash)): answered with HTTP \(answer.statusCode)")
       news.yield(.landed(tag, answer.statusCode))
     } else {
       news.yield(.lost(tag, String(localized: "The cloud gave no answer")))

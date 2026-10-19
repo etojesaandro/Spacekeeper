@@ -128,7 +128,7 @@ final class Uploads {
       do {
         try await outbox.accept(try await staging.consignment(of: item, aim: aim))
       } catch {
-        log.error("\(item.name, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        log.error("\(item.name, privacy: .private(mask: .hash)): \(error.localizedDescription, privacy: .public)")
         troubles.append("\(item.name): \(error.localizedDescription)")
       }
       await look()

@@ -100,7 +100,7 @@ final class Kept {
     guard needed <= free else {
       throw NoRoomToRestore(name: original.name(), needed: needed, free: free)
     }
-    log.notice("restoring \(original.name(), privacy: .public), \(needed) bytes")
+    log.notice("restoring \(original.name(), privacy: .private(mask: .hash)), \(needed) bytes")
     do {
       try await Retrieval(
         of: original,
@@ -110,10 +110,10 @@ final class Kept {
       ).make()
     } catch {
       let why = error.localizedDescription
-      log.error("\(original.name(), privacy: .public) not restored: \(why, privacy: .public)")
+      log.error("\(original.name(), privacy: .private(mask: .hash)) not restored: \(why, privacy: .public)")
       throw error
     }
-    log.notice("restored \(original.name(), privacy: .public)")
+    log.notice("restored \(original.name(), privacy: .private(mask: .hash))")
     line = ""
     await survey.run()
   }

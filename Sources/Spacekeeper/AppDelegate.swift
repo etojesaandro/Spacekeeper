@@ -50,7 +50,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     background.timeoutIntervalForResource = 2 * 24 * 3600
     let log = Logger(subsystem: "Spacekeeper", category: "outbox")
     let say: @Sendable (String) -> Void = { text in
-      log.notice("\(text, privacy: .public)")
+      log.notice("\(text, privacy: .private(mask: .hash))")
     }
     let (words, pen) = AsyncStream<String>.makeStream()
     let (asked, bell) = AsyncStream<CableNews>.makeStream()

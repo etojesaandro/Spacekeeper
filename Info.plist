@@ -19,6 +19,12 @@
     </array>
     <key>CFBundleDisplayName</key>
     <string>Spacekeeper</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
+    <key>UIDeviceFamily</key>
+    <array>
+        <integer>1</integer>
+    </array>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>Spacekeeper reads your photos and videos to show which ones take the most space, and removes the ones you move to your cloud.</string>
 </dict>

@@ -7,7 +7,8 @@ the ones you choose to a place that keeps them: Yandex Disk, Google Drive, or
 a computer over the cable. An original leaves the iPhone only after its copy
 has been checked byte for byte, and iOS still asks before anything is deleted.
 
-> "Spacekeeper" is a working name; the App Store name is still to be chosen.
+Project page, privacy policy and support:
+[etojesaandro.github.io/Spacekeeper](https://etojesaandro.github.io/Spacekeeper/).
 
 ## What it does
 
