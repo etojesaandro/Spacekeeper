@@ -86,13 +86,16 @@ struct LibraryPicture: View {
     Color(.secondarySystemFill)
       .overlay {
         if let picture = picture.first {
+          // A filled picture reaches past the square; only the square takes touches.
           Image(uiImage: picture)
             .resizable()
             .scaledToFill()
+            .allowsHitTesting(false)
         }
       }
       .frame(width: side, height: side)
       .clipped()
+      .contentShape(Rectangle())
       // A new size draws the picture again, keeping the old one until the new one comes.
       .task(id: "\(id)@\(Int(side))") {
         let pixels = CGSize(width: side * scale, height: side * scale)

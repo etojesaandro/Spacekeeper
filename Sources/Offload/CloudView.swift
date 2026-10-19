@@ -222,6 +222,7 @@ private struct CloudCell: View {
           Image(uiImage: picture)
             .resizable()
             .scaledToFill()
+            .allowsHitTesting(false)
         } else {
           Image(systemName: original.video() ? "video" : "photo")
             .foregroundStyle(.tertiary)
@@ -229,6 +230,7 @@ private struct CloudCell: View {
       }
       .frame(width: side, height: side)
       .clipped()
+      .contentShape(Rectangle())
       .overlay(alignment: .bottom) {
         LinearGradient(colors: [.clear, .black.opacity(0.45)], startPoint: .top, endPoint: .bottom)
           .frame(height: min(side * 0.45, 36))

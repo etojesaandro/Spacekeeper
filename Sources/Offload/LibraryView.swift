@@ -226,7 +226,7 @@ struct LibraryBrowser: View {
         count: findings.items.count,
         bytes: findings.total
       )) {
-        arrange()
+        await arrange()
       }
   }
 
@@ -394,28 +394,36 @@ struct LibraryBrowser: View {
     chosen = []
   }
 
-  private func arrange() {
-    let almanac = Almanac(findings.items, calendar: .current)
-    listed = almanac.items(of: period, by: order.wrappedValue).filter(kind.wrappedValue.holds)
-    arranged = true
-    guard period == .always else {
+  /// Works out the listed items and the covers away from the main thread,
+  /// which sorting tens of thousands of items would otherwise hold up.
+  private func arrange() async {
+    let (items, period, order, kind) = (findings.items, period, order.wrappedValue, kind.wrappedValue)
+    let (listed, covers) = await Task.detached(priority: .userInitiated) {
+      let calendar = Calendar.current
+      let listed = Almanac(items, calendar: calendar).items(of: period, by: order).filter(kind.holds)
+      var found: [Period: MediaItem] = [:]
+      if period == .always {
+        // The items come biggest first, so the first of each year and month is its biggest.
+        for item in items {
+          let parts = calendar.dateComponents([.year, .month], from: item.created)
+          let year = Period.year(parts.year ?? 0)
+          let month = Period.month(parts.year ?? 0, parts.month ?? 0)
+          if found[year] == nil {
+            found[year] = item
+          }
+          if found[month] == nil {
+            found[month] = item
+          }
+        }
+      }
+      return (listed, found)
+    }.value
+    guard !Task.isCancelled else {
       return
     }
-    // The items come biggest first, so the first of each year and month is its biggest.
-    var found: [Period: MediaItem] = [:]
-    let calendar = Calendar.current
-    for item in findings.items {
-      let parts = calendar.dateComponents([.year, .month], from: item.created)
-      let year = Period.year(parts.year ?? 0)
-      let month = Period.month(parts.year ?? 0, parts.month ?? 0)
-      if found[year] == nil {
-        found[year] = item
-      }
-      if found[month] == nil {
-        found[month] = item
-      }
-    }
-    covers = found
+    self.listed = listed
+    self.covers = covers
+    arranged = true
   }
 
   private func size(_ bytes: Int64) -> String {
@@ -585,6 +593,8 @@ struct SpanCards<Header: View, Destination: View>: View {
           .foregroundStyle(.secondary)
       }
     }
+    // One area for the picture and the words below it, so a press anywhere on the card opens it.
+    .contentShape(Rectangle())
     .accessibilityElement(children: .combine)
   }
 
