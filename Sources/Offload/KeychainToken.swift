@@ -59,7 +59,7 @@ struct KeychainToken: Sendable {
 /// Nobody is signed in yet.
 struct NoToken: LocalizedError {
   var errorDescription: String? {
-    "Sign in first, under More, then Clouds and accounts"
+    String(localized: "Connect a cloud first, with the account button at the top.")
   }
 }
 
@@ -72,6 +72,6 @@ struct KeychainFailure: LocalizedError {
   }
 
   var errorDescription: String? {
-    "The keychain refused to keep the token (status \(status))"
+    String(localized: "The keychain refused to keep the sign-in (status \(status.formatted()))")
   }
 }

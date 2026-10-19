@@ -247,7 +247,7 @@ struct GridCell: View {
 
   /// What VoiceOver says about the item.
   private var spoken: String {
-    var parts = [item.video ? "Video" : "Photo"]
+    var parts = [item.video ? String(localized: "Video") : String(localized: "Photo")]
     if item.video {
       parts.append(
         Duration.seconds(item.seconds.rounded()).formatted(.units(allowed: [.minutes, .seconds]))
@@ -256,10 +256,10 @@ struct GridCell: View {
     parts.append(item.bytes().formatted(.byteCount(style: .file)))
     parts.append(item.created.formatted(date: .long, time: .omitted))
     if item.onDevice() == 0 {
-      parts.append("only in iCloud")
+      parts.append(String(localized: "only in iCloud"))
     }
     if away {
-      parts.append("on its way to the cloud")
+      parts.append(String(localized: "on its way to the cloud"))
     }
     return parts.joined(separator: ", ")
   }

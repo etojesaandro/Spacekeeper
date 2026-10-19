@@ -1,0 +1,2 @@
+"CFBundleDisplayName" = "Offload";
+"NSPhotoLibraryUsageDescription" = "Offload 读取你的照片和视频，显示哪些占用空间最多，并移除你已移到云端的项目。";

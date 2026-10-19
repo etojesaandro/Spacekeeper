@@ -159,7 +159,7 @@ struct CloudFolder: View {
     let side = ((width - 2 * 2) / 3).rounded(.down)
     return VStack(alignment: .leading, spacing: 8) {
       Text(
-        "\(originals.count.formatted()) items · "
+        verbatim: "\(String(localized: "\(originals.count) items")) · "
           + originals.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))
       )
       .font(.subheadline.weight(.semibold))
@@ -178,11 +178,10 @@ struct CloudFolder: View {
   /// A folder's name for people: a month folder inside a year reads as the month.
   private func name(of folder: String) -> String {
     let levels = folder.split(separator: "/").map(String.init)
-    let names = Calendar.current.monthSymbols
-    if levels.count == 2, levels[0].count == 4, let month = Int(levels[1]),
-      names.indices.contains(month - 1)
+    if levels.count == 2, levels[0].count == 4, let year = Int(levels[0]), let month = Int(levels[1]),
+      (1...12).contains(month)
     {
-      return "\(names[month - 1]) \(levels[0])"
+      return PeriodName(.month(year, month)).value()
     }
     return levels.last ?? folder
   }
@@ -242,9 +241,11 @@ private struct CloudCell: View {
       .contentShape(Rectangle())
       .accessibilityElement(children: .ignore)
       .accessibilityLabel(
-        "\(original.video() ? "Video" : "Photo"), "
-          + original.bytes().formatted(.byteCount(style: .file))
-          + (home ? ", also on this iPhone" : "")
+        [
+          original.video() ? String(localized: "Video") : String(localized: "Photo"),
+          original.bytes().formatted(.byteCount(style: .file)),
+        ].joined(separator: ", ")
+          + (home ? ", " + String(localized: "also on this iPhone") : "")
       )
       .accessibilityAddTraits(.isButton)
       .task(id: original.id) {
@@ -305,7 +306,7 @@ struct CloudViewer: View {
     case .working:
       HStack(spacing: 12) {
         ProgressView()
-        Text(kept.line.isEmpty ? "Bringing it back" : kept.line)
+        Text(kept.line.isEmpty ? String(localized: "Bringing it back") : kept.line)
           .font(.subheadline.monospacedDigit())
           .lineLimit(1)
       }
@@ -342,7 +343,9 @@ struct CloudViewer: View {
       failure.isEmpty ? (kept.onPhone(original) ? "Restore Again" : "Restore") : "Try Again",
       symbol: failure.isEmpty ? "square.and.arrow.down" : "exclamationmark.arrow.circlepath",
       tint: failure.isEmpty ? .accentColor : .orange,
-      spoken: failure.isEmpty ? "Restore to this iPhone" : "Not restored: \(failure). Try again"
+      spoken: failure.isEmpty
+        ? String(localized: "Restore to this iPhone")
+        : String(localized: "Not restored: \(failure). Try again")
     ) {
       Task {
         stages[original.id] = .working
@@ -358,20 +361,22 @@ struct CloudViewer: View {
 
   private func facts(_ original: KeptOriginal) -> [Fact] {
     var facts = [
-      Fact(name: "Kind", value: original.video() ? "Video" : (original.parts().isEmpty ? "File" : "Photo")),
-      Fact(name: "File", value: original.name()),
-      Fact(name: "Size", value: original.bytes().formatted(.byteCount(style: .file))),
-      Fact(name: "Kept on", value: cloud),
-      Fact(name: "On this iPhone", value: kept.onPhone(original) ? "Seems so" : "No"),
+      Fact(name: String(localized: "Kind"), value: original.video()
+          ? String(localized: "Video")
+          : (original.parts().isEmpty ? String(localized: "File") : String(localized: "Photo"))),
+      Fact(name: String(localized: "File"), value: original.name()),
+      Fact(name: String(localized: "Size"), value: original.bytes().formatted(.byteCount(style: .file))),
+      Fact(name: String(localized: "Kept on"), value: cloud),
+      Fact(name: String(localized: "On this iPhone"), value: kept.onPhone(original) ? String(localized: "Seems so") : String(localized: "No")),
     ]
     if let made = original.made(in: .current).first {
-      facts.insert(Fact(name: "Taken", value: made.formatted(date: .long, time: .shortened)), at: 2)
+      facts.insert(Fact(name: String(localized: "Taken"), value: made.formatted(date: .long, time: .shortened)), at: 2)
     }
     if original.count() > 1 {
-      facts.append(Fact(name: "Files", value: "\(original.count())"))
+      facts.append(Fact(name: String(localized: "Files"), value: original.count().formatted()))
     }
     if original.count() > original.parts().count {
-      facts.append(Fact(name: "Edits", value: "Not brought back; it returns as it was taken"))
+      facts.append(Fact(name: String(localized: "Edits"), value: String(localized: "Not brought back; it returns as it was taken")))
     }
     return facts
   }

@@ -47,8 +47,7 @@ struct BackupTab: View {
             Text("Windows, macOS and Linux. On Windows a double click is enough.")
           }
           Step(number: 3, title: "Type the code shown above") {
-            Text("Files go into Pictures/iPhone, in folders by year and month. Running it again "
-              + "fetches only what is new.")
+            Text("Files go into Pictures/iPhone, in folders by year and month. Running it again fetches only what is new.")
           }
         }
         if cable.files > 0 || !cable.held.isEmpty {
@@ -66,8 +65,9 @@ struct BackupTab: View {
               }
             } label: {
               Label(
-                "Delete \(cable.held.count.formatted()) items from iPhone · free "
-                  + cable.held.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file)),
+                String(
+                  localized: "Delete \(cable.held.count) items from iPhone · free \(cable.held.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file)))"
+                ),
                 systemImage: "trash"
               )
             }
@@ -106,12 +106,12 @@ struct BackupTab: View {
 /// One numbered step of the instructions.
 private struct Step<Detail: View>: View {
   let number: Int
-  let title: String
+  let title: LocalizedStringKey
   @ViewBuilder let detail: Detail
 
   var body: some View {
     HStack(alignment: .top, spacing: 14) {
-      Text("\(number)")
+      Text(verbatim: number.formatted())
         .font(.subheadline.weight(.bold))
         .foregroundStyle(.white)
         .frame(width: 28, height: 28)

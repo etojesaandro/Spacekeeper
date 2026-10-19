@@ -1,0 +1,84 @@
+{
+ "%lld items": {
+  "format": "%#@n@",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "%lld items changed since the list was read and stayed. Pull down the library to read it again.": {
+  "format": "%#@n@ changed since the list was read and stayed. Pull down the library to read it again.",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "%lld items changed since they were listed and stayed.": {
+  "format": "%#@n@ changed since being listed and stayed.",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "%lld items not uploaded": {
+  "format": "%#@n@ not uploaded",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "%lld items safe on %@": {
+  "format": "%#@n@ safe on %@",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "%lld items, %@, are in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.": {
+  "format": "%#@n@, %@, now in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "%lld items, %@, are on %@ and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.": {
+  "format": "%#@n@, %@, now on %@ and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "%lld items, %@, are on %@ and still on this iPhone.": {
+  "format": "%#@n@, %@, now on %@ and still on this iPhone.",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "%lld items, %@, are on the computer and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.": {
+  "format": "%#@n@, %@, now on the computer and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "%lld selected": {
+  "format": "%#@n@ selected",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "Delete %lld items": {
+  "format": "Delete %#@n@",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "Delete %lld items from iPhone · free %@": {
+  "format": "Delete %#@n@ from iPhone · free %@",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "Delete %lld items without a copy?": {
+  "format": "Delete %#@n@ without a copy?",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "Info:CFBundleDisplayName": "Offload",
+ "Info:NSPhotoLibraryUsageDescription": "Offload reads your photos and videos to show which ones take the most space, and removes the ones you move to your cloud.",
+ "Move %lld items": {
+  "format": "Move %#@n@",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "Move %lld items to %@?": {
+  "format": "Move %#@n@ to %@?",
+  "one": "%lld item",
+  "other": "%lld items"
+ },
+ "Uploading %lld items to %@": {
+  "format": "Uploading %#@n@ to %@",
+  "one": "%lld item",
+  "other": "%lld items"
+ }
+}

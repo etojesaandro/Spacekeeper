@@ -27,7 +27,7 @@ struct PatientWire: Wire {
     let started = Date()
     var native = native(request)
     native.timeoutInterval = 30
-    say("Cloud: \(request.method) \(request.url.lastPathComponent)")
+    say(String(localized: "Asking the cloud"))
     log.notice("start \(what, privacy: .public)")
     do {
       let (body, answer) = try await session.data(for: native)
@@ -52,7 +52,7 @@ struct PatientWire: Wire {
   }
 
   func response(to request: Request, sending file: URL) async throws -> Response {
-    let what = "Upload to \(request.url.host() ?? "?")"
+    let what = String(localized: "Upload to \(request.url.host() ?? "?")")
     let started = Date()
     let facts = try? FileManager.default.attributesOfItem(atPath: file.path)
     let size = (facts?[.size] as? NSNumber)?.int64Value ?? 0
@@ -60,7 +60,7 @@ struct PatientWire: Wire {
     // The Disk stays silent after the last byte for roughly two minutes per gigabyte.
     native.timeoutInterval = max(600, Double(size) / 1_073_741_824 * 180)
     let meter = Meter(say: say, log: log)
-    say("Connecting to \(request.url.host() ?? "the cloud")")
+    say(String(localized: "Connecting to \(request.url.host() ?? String(localized: "the cloud"))"))
     log.notice("start \(what, privacy: .public), \(size) bytes")
     do {
       let (body, answer) = try await session.upload(for: native, fromFile: file, delegate: meter)
@@ -88,12 +88,12 @@ struct PatientWire: Wire {
   }
 
   func response(to request: Request, saving file: URL) async throws -> Response {
-    let what = "Download from \(request.url.host() ?? "?")"
+    let what = String(localized: "Download from \(request.url.host() ?? "?")")
     let started = Date()
     var native = native(request)
     native.timeoutInterval = 600
     let flight = Flight()
-    say("Connecting to \(request.url.host() ?? "the cloud")")
+    say(String(localized: "Connecting to \(request.url.host() ?? String(localized: "the cloud"))"))
     log.notice("start \(what, privacy: .public)")
     // A download reports no progress to those who wait for it, so it is asked now and then.
     let say = say
@@ -103,8 +103,9 @@ struct PatientWire: Wire {
         let (got, all) = flight.progress()
         if all > 0 {
           say(
-            "Downloading: \(got.formatted(.byteCount(style: .file))) of "
-              + "\(all.formatted(.byteCount(style: .file)))"
+            String(
+              localized: "Downloading: \(got.formatted(.byteCount(style: .file))) of \(all.formatted(.byteCount(style: .file)))"
+            )
           )
         }
       }
@@ -194,7 +195,7 @@ struct TransferFailure: LocalizedError {
   }
 
   var errorDescription: String? {
-    "\(what) failed after \(Int(seconds.rounded())) s"
+    String(localized: "\(what) failed after \(Int(seconds.rounded()).formatted()) s")
       + (progress.isEmpty ? "" : ", \(progress)")
       + ": \(cause.localizedDescription)"
   }
@@ -244,16 +245,18 @@ private final class Meter: NSObject, URLSessionTaskDelegate, Sendable {
       log.notice("sent \(totalBytesSent) of \(totalBytesExpectedToSend) bytes")
       say(
         totalBytesSent < totalBytesExpectedToSend
-          ? "Uploading: \(totalBytesSent.formatted(.byteCount(style: .file))) of "
-            + "\(totalBytesExpectedToSend.formatted(.byteCount(style: .file)))"
-          : "Sent. Waiting for the cloud to confirm"
+          ? String(
+            localized: "Uploading: \(totalBytesSent.formatted(.byteCount(style: .file))) of \(totalBytesExpectedToSend.formatted(.byteCount(style: .file)))"
+          )
+          : String(localized: "Sent. Waiting for the cloud to confirm")
       )
     }
   }
 
   func summary() -> String {
     let (sent, total) = counts.withLock { $0 }
-    return "\(sent.formatted(.byteCount(style: .file))) of "
-      + "\(total.formatted(.byteCount(style: .file))) sent"
+    return String(
+      localized: "\(sent.formatted(.byteCount(style: .file))) of \(total.formatted(.byteCount(style: .file))) sent"
+    )
   }
 }

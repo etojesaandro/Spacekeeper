@@ -108,11 +108,11 @@ final class Uploads {
   ///   - items: What to upload.
   ///   - aim: Whether the items leave this iPhone once the Disk holds them.
   func begin(_ items: [MediaItem], aim: Aim) async {
-    stage = .working(headline: "Preparing", step: "")
+    stage = .working(headline: String(localized: "Preparing"), step: "")
     guard choice.account().signedIn() else {
       stage = .done(
-        title: "Nothing was uploaded",
-        text: "Connect \(cloud()) first, with the account button at the top."
+        title: String(localized: "Nothing was uploaded"),
+        text: String(localized: "Connect \(cloud()) first, with the account button at the top.")
       )
       return
     }
@@ -120,8 +120,10 @@ final class Uploads {
     var troubles: [String] = []
     for (index, item) in items.enumerated() {
       stage = .working(
-        headline: items.count == 1 ? item.name : "\(index + 1) of \(items.count): \(item.name)",
-        step: "Preparing for upload"
+        headline: items.count == 1
+          ? item.name
+          : String(localized: "\((index + 1).formatted()) of \(items.count.formatted()): \(item.name)"),
+        step: String(localized: "Preparing for upload")
       )
       do {
         try await outbox.accept(try await staging.consignment(of: item, aim: aim))
@@ -133,7 +135,7 @@ final class Uploads {
     }
     stage = troubles.isEmpty
       ? .idle
-      : .done(title: "Not everything was queued", text: troubles.joined(separator: "\n\n"))
+      : .done(title: String(localized: "Not everything was queued"), text: troubles.joined(separator: "\n\n"))
   }
 
   /// Removes items from the library without copying them anywhere, with the user's consent.
@@ -145,23 +147,35 @@ final class Uploads {
       let size = gone.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))
       let left = items.count - gone.count
       log.notice("deleted \(gone.count) items without a copy, left \(left)")
-      let title = gone.isEmpty ? "Nothing was deleted" : "Deleted"
-      let text =
-        (gone.isEmpty
-          ? ""
-          : (gone.count == 1 ? gone[0].name : "\(gone.count) items")
-            + ", \(size), \(gone.count == 1 ? "is" : "are") in Recently Deleted on this "
-            + "iPhone. The space is freed once Recently Deleted is emptied.")
-          + (left == 0
-            ? ""
-            : "\(gone.isEmpty ? "" : "\n\n")\(left) changed since the list was read and "
-              + "stayed. Pull down the library to read it again.")
+      let title = gone.isEmpty ? String(localized: "Nothing was deleted") : String(localized: "Deleted")
+      var lines: [String] = []
+      if gone.count == 1 {
+        lines.append(
+          String(
+            localized: "\(gone[0].name), \(size), is in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied."
+          )
+        )
+      } else if gone.count > 1 {
+        lines.append(
+          String(
+            localized: "\(gone.count) items, \(size), are in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied."
+          )
+        )
+      }
+      if left > 0 {
+        lines.append(
+          String(
+            localized: "\(left) items changed since the list was read and stayed. Pull down the library to read it again."
+          )
+        )
+      }
+      let text = lines.joined(separator: "\n\n")
       stage = left == 0 ? .told(title: title, text: text) : .done(title: title, text: text)
     } catch is DeletionDeclined {
       log.notice("the deletion was declined")
     } catch {
       log.error("deletion failed: \(error.localizedDescription, privacy: .public)")
-      stage = .done(title: "Nothing was deleted", text: error.localizedDescription)
+      stage = .done(title: String(localized: "Nothing was deleted"), text: error.localizedDescription)
     }
   }
 
@@ -184,29 +198,36 @@ final class Uploads {
       survey.forget(gone.map { $0.original() })
       await look()
       var lines: [String] = []
-      if !gone.isEmpty {
+      let size = gone.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))
+      if gone.count == 1 {
         lines.append(
-          (gone.count == 1 ? gone[0].original().name : "\(gone.count) items")
-            + ", \(gone.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))), "
-            + (gone.count == 1 ? "is" : "are")
-            + " on \(cloud()) and in Recently Deleted on this iPhone. "
-            + "The space is freed once Recently Deleted is emptied."
+          String(
+            localized: "\(gone[0].original().name), \(size), is on \(cloud()) and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied."
+          )
+        )
+      } else if gone.count > 1 {
+        lines.append(
+          String(
+            localized: "\(gone.count) items, \(size), are on \(cloud()) and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied."
+          )
         )
       }
       for consignment in changed {
         lines.append(
-          "\(consignment.original().name) was changed after it was uploaded, so it stays on "
-            + "this iPhone. Move it again to upload it as it is now."
+          String(
+            localized: "\(consignment.original().name) was changed after it was uploaded, so it stays on this iPhone. Move it again to upload it as it is now."
+          )
         )
       }
       log.notice("deleted \(gone.count) items, left \(changed.count) that changed")
-      let (title, text) = (gone.isEmpty ? "Nothing was deleted" : "Moved", lines.joined(separator: "\n\n"))
+      let title = gone.isEmpty ? String(localized: "Nothing was deleted") : String(localized: "Moved")
+      let text = lines.joined(separator: "\n\n")
       stage = changed.isEmpty ? .told(title: title, text: text) : .done(title: title, text: text)
     } catch is DeletionDeclined {
       log.notice("the deletion was declined")
     } catch {
       log.error("deletion failed: \(error.localizedDescription, privacy: .public)")
-      stage = .done(title: "Nothing was deleted", text: error.localizedDescription)
+      stage = .done(title: String(localized: "Nothing was deleted"), text: error.localizedDescription)
     }
   }
 
@@ -325,10 +346,10 @@ final class Uploads {
     }
     let size = copied.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))
     stage = .told(
-      title: "Copied",
-      text: (copied.count == 1 ? copied[0].original().name : "\(copied.count) items")
-        + ", \(size), \(copied.count == 1 ? "is" : "are") on \(cloud()) and still on "
-        + "this iPhone."
+      title: String(localized: "Copied"),
+      text: copied.count == 1
+        ? String(localized: "\(copied[0].original().name), \(size), is on \(cloud()) and still on this iPhone.")
+        : String(localized: "\(copied.count) items, \(size), are on \(cloud()) and still on this iPhone.")
     )
     copied = []
     return true

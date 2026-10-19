@@ -1,0 +1,2 @@
+"CFBundleDisplayName" = "Offload";
+"NSPhotoLibraryUsageDescription" = "Offload читает ваши фото и видео, чтобы показать, какие занимают больше всего места, и удаляет те, что вы переместили в облако.";

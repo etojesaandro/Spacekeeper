@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>%lld items</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>%lld items changed since the list was read and stayed. Pull down the library to read it again.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@ changed since the list was read and stayed. Pull down the library to read it again.</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>%lld items changed since they were listed and stayed.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@ changed since being listed and stayed.</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>%lld items not uploaded</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@ not uploaded</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>%lld items safe on %@</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@ safe on %@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@, %@, now in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are on %@ and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@, %@, now on %@ and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are on %@ and still on this iPhone.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@, %@, now on %@ and still on this iPhone.</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are on the computer and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@, %@, now on the computer and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>%lld selected</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@ selected</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>Delete %lld items</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>Delete %#@n@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>Delete %lld items from iPhone · free %@</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>Delete %#@n@ from iPhone · free %@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>Delete %lld items without a copy?</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>Delete %#@n@ without a copy?</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>Move %lld items</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>Move %#@n@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>Move %lld items to %@?</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>Move %#@n@ to %@?</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+  <key>Uploading %lld items to %@</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>Uploading %#@n@ to %@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>one</key>
+      <string>%lld item</string>
+      <key>other</key>
+      <string>%lld items</string>
+    </dict>
+  </dict>
+</dict>
+</plist>

@@ -68,8 +68,8 @@ struct AccountSheet: View {
         } footer: {
           Text(
             busy
-              ? "The cloud can be changed once nothing is waiting to upload."
-              : "Move, Copy and the cloud's browser use the cloud chosen here."
+              ? String(localized: "The cloud can be changed once nothing is waiting to upload.")
+              : String(localized: "Move, Copy and the Cloud tab use the cloud chosen here.")
           )
         }
         Section(yandex.name()) {
@@ -183,7 +183,7 @@ struct AccountSheet: View {
       case .refused(let reason):
         problem = reason
       case .elsewhere:
-        problem = "Google returned to an unexpected address"
+        problem = String(localized: "Google returned to an unexpected address")
       }
     } catch ASWebAuthenticationSessionError.canceledLogin {
       // The user closed the sheet; nothing to tell.

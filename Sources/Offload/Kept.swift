@@ -92,7 +92,7 @@ final class Kept {
 
   /// Brings an original back into the photo library.
   func restore(_ original: KeptOriginal) async throws {
-    line = "Preparing"
+    line = String(localized: "Preparing")
     let needed = original.parts().reduce(0) { $0 + $1.file.weight() }
     let free = (try? FileManager.default.temporaryDirectory
       .resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
@@ -163,7 +163,8 @@ struct NoRoomToRestore: LocalizedError {
   }
 
   var errorDescription: String? {
-    "\(name) needs \(needed.formatted(.byteCount(style: .file))), but this iPhone has only "
-      + "\(free.formatted(.byteCount(style: .file))) free"
+    String(
+      localized: "\(name) needs \(needed.formatted(.byteCount(style: .file))), but this iPhone has only \(free.formatted(.byteCount(style: .file))) free"
+    )
   }
 }

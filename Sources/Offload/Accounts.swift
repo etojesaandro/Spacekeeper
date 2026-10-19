@@ -38,7 +38,7 @@ struct YandexAccount: Account {
   }
 
   func name() -> String {
-    "Yandex Disk"
+    String(localized: "Yandex Disk")
   }
 
   func signedIn() -> Bool {
@@ -91,7 +91,7 @@ struct GoogleAccount: Account {
   }
 
   func name() -> String {
-    "Google Drive"
+    String(localized: "Google Drive")
   }
 
   func signedIn() -> Bool {
@@ -157,7 +157,9 @@ extension KeychainToken: Secret {}
 /// Google signed the user in but handed out no token that lasts.
 struct NoRefresh: LocalizedError {
   var errorDescription: String? {
-    "Google did not allow lasting access. Sign out of Offload in your Google account and try again."
+    String(
+      localized: "Google did not allow lasting access. Remove Offload from your Google account's connected apps and try again."
+    )
   }
 }
 

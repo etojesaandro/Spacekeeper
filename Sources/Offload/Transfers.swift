@@ -88,25 +88,25 @@ struct TransferStrip: View {
       return headline
     }
     if !uploads.travelling().isEmpty {
-      return "Uploading \(uploads.travelling().count) to \(uploads.cloud())"
+      return String(localized: "Uploading \(uploads.travelling().count) items to \(uploads.cloud())")
     }
     if !uploads.failed().isEmpty {
-      return "\(uploads.failed().count) not uploaded"
+      return String(localized: "\(uploads.failed().count) items not uploaded")
     }
-    return "\(uploads.safe().count) safe on \(uploads.cloud())"
+    return String(localized: "\(uploads.safe().count) items safe on \(uploads.cloud())")
   }
 
   private var detail: String {
     if case .working(_, let step) = uploads.stage {
-      return step.isEmpty ? "Getting ready" : step
+      return step.isEmpty ? String(localized: "Getting ready") : step
     }
     if !uploads.travelling().isEmpty {
-      return "\(size(uploads.gone())) of \(size(uploads.bytes())) · goes on in the background"
+      return String(localized: "\(size(uploads.gone())) of \(size(uploads.bytes())) · goes on in the background")
     }
     if !uploads.failed().isEmpty {
-      return "Tap to see why and try again"
+      return String(localized: "Tap to see why and try again")
     }
-    return "Delete them here to free \(size(uploads.safe().reduce(0) { $0 + $1.bytes() }))"
+    return String(localized: "Delete them here to free \(size(uploads.safe().reduce(0) { $0 + $1.bytes() }))")
   }
 
   private func size(_ bytes: Int64) -> String {
@@ -165,7 +165,7 @@ struct TransfersSheet: View {
               }
             }
             ForEach(uploads.safe(), id: \.id) { consignment in
-              row(consignment, note: "Checked on \(uploads.cloud())", symbol: "checkmark.circle.fill", tint: .green)
+              row(consignment, note: String(localized: "Checked on \(uploads.cloud())"), symbol: "checkmark.circle.fill", tint: .green)
             }
           } header: {
             Text("Safe on \(uploads.cloud())")
@@ -178,7 +178,7 @@ struct TransfersSheet: View {
             ForEach(uploads.travelling(), id: \.id) { consignment in
               row(
                 consignment,
-                note: "\(size(consignment.gone(sent: uploads.sent))) of \(size(consignment.bytes()))",
+                note: String(localized: "\(size(consignment.gone(sent: uploads.sent))) of \(size(consignment.bytes()))"),
                 symbol: "arrow.up.circle",
                 tint: .accentColor
               )
@@ -266,7 +266,7 @@ struct TransfersSheet: View {
     if case .failed(let reason) = consignment.standing() {
       return reason
     }
-    return "Not uploaded"
+    return String(localized: "Not uploaded")
   }
 
   private func size(_ bytes: Int64) -> String {

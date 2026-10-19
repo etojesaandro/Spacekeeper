@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>%lld items</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>%lld items changed since the list was read and stayed. Pull down the library to read it again.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@在读取列表后有改动，未删除。下拉图库可重新读取。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>%lld items changed since they were listed and stayed.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@在列出后有改动，未删除。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>%lld items not uploaded</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@未上传</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>%lld items safe on %@</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@已安全存于 %@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@（%@）已在这台 iPhone 的“最近删除”中。清空“最近删除”后即可释放空间。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are on %@ and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@（%@）已在 %@ 中，并在这台 iPhone 的“最近删除”中。清空“最近删除”后即可释放空间。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are on %@ and still on this iPhone.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@（%@）已在 %@ 中，并仍保留在这台 iPhone 上。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are on the computer and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@（%@）已在电脑上，并在这台 iPhone 的“最近删除”中。清空“最近删除”后即可释放空间。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>%lld selected</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>已选择 %#@n@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>Delete %lld items</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>删除 %#@n@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>Delete %lld items from iPhone · free %@</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>从 iPhone 删除 %#@n@ · 释放 %@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>Delete %lld items without a copy?</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>不保留副本删除 %#@n@？</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>Move %lld items</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>移动 %#@n@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>Move %lld items to %@?</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>将 %#@n@移到 %@？</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+  <key>Uploading %lld items to %@</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>正在将 %#@n@上传到 %@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 项</string>
+    </dict>
+  </dict>
+</dict>
+</plist>

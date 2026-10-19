@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>%lld items</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>%lld items changed since the list was read and stayed. Pull down the library to read it again.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@は一覧の読み込み後に変更されたため削除されませんでした。ライブラリを下に引くと読み込み直します。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>%lld items changed since they were listed and stayed.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@は一覧作成後に変更されたため削除されませんでした。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>%lld items not uploaded</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@が未アップロード</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>%lld items safe on %@</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@を %@ に安全に保存済み</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@（%@）はこの iPhone の「最近削除した項目」にあります。「最近削除した項目」を空にすると容量が空きます。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are on %@ and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@（%@）は %@ と、この iPhone の「最近削除した項目」にあります。「最近削除した項目」を空にすると容量が空きます。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are on %@ and still on this iPhone.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@（%@）は %@ にあり、この iPhone にも残っています。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>%lld items, %@, are on the computer and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied.</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@（%@）はコンピュータと、この iPhone の「最近削除した項目」にあります。「最近削除した項目」を空にすると容量が空きます。</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>%lld selected</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@を選択中</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>Delete %lld items</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@を削除</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>Delete %lld items from iPhone · free %@</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>iPhone から%#@n@を削除 · %@ を解放</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>Delete %lld items without a copy?</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@をコピーなしで削除しますか？</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>Move %lld items</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@を移動</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>Move %lld items to %@?</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@を %@ に移動しますか？</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+  <key>Uploading %lld items to %@</key>
+  <dict>
+    <key>NSStringLocalizedFormatKey</key>
+    <string>%#@n@を %@ にアップロード中</string>
+    <key>n</key>
+    <dict>
+      <key>NSStringFormatSpecTypeKey</key>
+      <string>NSStringPluralRuleType</string>
+      <key>NSStringFormatValueTypeKey</key>
+      <string>lld</string>
+      <key>other</key>
+      <string>%lld 項目</string>
+    </dict>
+  </dict>
+</dict>
+</plist>

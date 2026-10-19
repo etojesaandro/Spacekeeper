@@ -81,7 +81,7 @@ final class CableBackup {
       UIApplication.shared.isIdleTimerDisabled = true
       log.notice("the library is open to a computer over the cable")
     } catch {
-      note = "The backup could not be opened: \(error.localizedDescription)"
+      note = String(localized: "The backup could not be opened: \(error.localizedDescription)")
       log.error("not opened: \(error.localizedDescription, privacy: .public)")
     }
   }
@@ -112,14 +112,15 @@ final class CableBackup {
       held = []
       let size = gone.reduce(0) { $0 + $1.bytes() }.formatted(.byteCount(style: .file))
       let left = going.count - gone.count
-      note = "\(gone.count) items, \(size), are on the computer and in Recently Deleted on "
-        + "this iPhone. The space is freed once Recently Deleted is emptied."
-        + (left == 0 ? "" : " \(left) changed since they were listed and stayed.")
+      note = String(
+        localized: "\(gone.count) items, \(size), are on the computer and in Recently Deleted on this iPhone. The space is freed once Recently Deleted is emptied."
+      )
+        + (left == 0 ? "" : " " + String(localized: "\(left) items changed since they were listed and stayed."))
       log.notice("deleted \(gone.count) items the computer holds, left \(left)")
     } catch is DeletionDeclined {
       log.notice("the deletion was declined")
     } catch {
-      note = "Nothing was deleted: \(error.localizedDescription)"
+      note = String(localized: "Nothing was deleted: \(error.localizedDescription)")
     }
   }
 

@@ -1,3 +1,15 @@
 version: 1
 bundleID: com.example.Offload
 infoPath: Info.plist
+# Translations, one folder per language; Localization/strings.py writes them.
+resources:
+  - Localization/en.lproj
+  - Localization/ru.lproj
+  - Localization/uk.lproj
+  - Localization/de.lproj
+  - Localization/es.lproj
+  - Localization/fr.lproj
+  - Localization/it.lproj
+  - Localization/pt-BR.lproj
+  - Localization/zh-Hans.lproj
+  - Localization/ja.lproj

@@ -234,8 +234,8 @@ struct Welcome: View {
 /// One point of the welcome: a symbol, a short title, a line.
 private struct Point: View {
   let symbol: String
-  let title: String
-  let text: String
+  let title: LocalizedStringKey
+  let text: LocalizedStringKey
 
   var body: some View {
     HStack(alignment: .top, spacing: 16) {

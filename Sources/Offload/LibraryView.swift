@@ -146,7 +146,7 @@ struct LibraryBrowser: View {
       .toolbar {
         if selecting {
           ToolbarItem(placement: .topBarLeading) {
-            Button(all ? "Deselect All" : "Select All") {
+            Button(all ? String(localized: "Deselect All") : String(localized: "Select All")) {
               chosen = all ? [] : markable
             }
           }
@@ -189,11 +189,11 @@ struct LibraryBrowser: View {
         titleVisibility: .visible
       ) {
         if asking.first == .move {
-          Button("Move \(count(chosen.count))") {
+          Button(String(localized: "Move \(chosen.count) items")) {
             finish(.move)
           }
         } else {
-          Button("Delete \(count(chosen.count))", role: .destructive) {
+          Button(String(localized: "Delete \(chosen.count) items"), role: .destructive) {
             finish(.delete)
           }
         }
@@ -266,7 +266,7 @@ struct LibraryBrowser: View {
           ContentUnavailableView(
             "Nothing here",
             systemImage: "photo.on.rectangle",
-            description: Text("No \(kind.wrappedValue.noun) in this period.")
+            description: Text(kind.wrappedValue.missing)
           )
         }
       }
@@ -277,11 +277,11 @@ struct LibraryBrowser: View {
   private var summary: some View {
     VStack(alignment: .leading, spacing: 10) {
       VStack(alignment: .leading, spacing: 2) {
-        Text("\(listed.count.formatted()) items · \(size(listed.reduce(0) { $0 + $1.bytes() }))")
+        Text(verbatim: "\(String(localized: "\(listed.count) items")) · \(size(listed.reduce(0) { $0 + $1.bytes() }))")
           .font(.subheadline.weight(.semibold))
         let away = listed.reduce(0) { $0 + ($1.bytes() - $1.onDevice()) }
         if away > 0 {
-          Label("\(size(away)) of it only in iCloud", systemImage: "icloud")
+          Label(String(localized: "\(size(away)) of it only in iCloud"), systemImage: "icloud")
             .font(.footnote)
             .foregroundStyle(.secondary)
         }
@@ -324,19 +324,11 @@ struct LibraryBrowser: View {
   }
 
   private var title: String {
-    switch period {
-    case .always:
-      return "Library"
-    case .year(let year):
-      return String(year)
-    case .month(let year, let month):
-      let names = Calendar.current.standaloneMonthSymbols
-      return names.indices.contains(month - 1) ? "\(names[month - 1]) \(year)" : String(year)
-    }
+    period == .always ? String(localized: "Library") : PeriodName(period).value()
   }
 
   private var picked: String {
-    chosen.isEmpty ? "Select Items" : "\(count(chosen.count)) Selected"
+    chosen.isEmpty ? String(localized: "Select Items") : String(localized: "\(chosen.count) selected")
   }
 
   private var away: Set<String> {
@@ -358,16 +350,19 @@ struct LibraryBrowser: View {
 
   private var question: String {
     asking.first == .move
-      ? "Move \(count(chosen.count)) to \(clouds.name)?"
-      : "Delete \(count(chosen.count)) without a copy?"
+      ? String(localized: "Move \(chosen.count) items to \(clouds.name)?")
+      : String(localized: "Delete \(chosen.count) items without a copy?")
   }
 
   private var warning: String {
     let freed = size(marked.reduce(0) { $0 + $1.onDevice() })
     return asking.first == .move
-      ? "They are uploaded and checked, then deleted from this iPhone, freeing about \(freed). "
-        + "iOS asks you to confirm the deletion."
-      : "No copy is made. They go to Recently Deleted, freeing about \(freed) once it is emptied."
+      ? String(
+        localized: "They are uploaded and checked, then deleted from this iPhone, freeing about \(freed). iOS asks you to confirm the deletion."
+      )
+      : String(
+        localized: "No copy is made. They go to Recently Deleted, freeing about \(freed) once it is emptied."
+      )
   }
 
   private func finish(_ deed: Deed) {
@@ -402,10 +397,6 @@ struct LibraryBrowser: View {
       }
     }
     covers = found
-  }
-
-  private func count(_ number: Int) -> String {
-    number == 1 ? "1 Item" : "\(number.formatted()) Items"
   }
 
   private func size(_ bytes: Int64) -> String {
@@ -445,31 +436,31 @@ enum Kind: CaseIterable, Hashable {
   var title: String {
     switch self {
     case .all:
-      return "All items"
+      return String(localized: "All items")
     case .photos:
-      return "Photos"
+      return String(localized: "Photos")
     case .videos:
-      return "Videos"
+      return String(localized: "Videos")
     case .onPhone:
-      return "On this iPhone"
+      return String(localized: "On this iPhone")
     case .iCloud:
-      return "Only in iCloud"
+      return String(localized: "Only in iCloud")
     }
   }
 
-  /// The word for such items in a sentence.
-  var noun: String {
+  /// What a period without such items says.
+  var missing: String {
     switch self {
     case .all:
-      return "items"
+      return String(localized: "Nothing from this period.")
     case .photos:
-      return "photos"
+      return String(localized: "No photos in this period.")
     case .videos:
-      return "videos"
+      return String(localized: "No videos in this period.")
     case .onPhone:
-      return "items on this iPhone"
+      return String(localized: "Nothing from this period is on this iPhone.")
     case .iCloud:
-      return "items only in iCloud"
+      return String(localized: "Nothing from this period is only in iCloud.")
     }
   }
 
@@ -558,9 +549,9 @@ struct SpanCards<Header: View, Destination: View>: View {
       }
       .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
       VStack(alignment: .leading, spacing: 1) {
-        Text(name(of: span.period))
+        Text(PeriodName(span.period).value())
           .font(.headline)
-        Text("\(span.bytes.formatted(.byteCount(style: .file))) · \(span.count.formatted()) items")
+        Text(verbatim: "\(span.bytes.formatted(.byteCount(style: .file))) · \(String(localized: "\(span.count) items"))")
           .font(.footnote.monospacedDigit())
           .foregroundStyle(.secondary)
       }
@@ -568,15 +559,32 @@ struct SpanCards<Header: View, Destination: View>: View {
     .accessibilityElement(children: .combine)
   }
 
-  private func name(of period: Period) -> String {
+}
+
+/// The name of a year or a month as people of the user's language write it.
+struct PeriodName {
+  private let period: Period
+
+  init(_ period: Period) {
+    self.period = period
+  }
+
+  func value() -> String {
     switch period {
     case .always:
-      return "All time"
+      return String(localized: "All time")
     case .year(let year):
       return String(year)
     case .month(let year, let month):
-      let names = Calendar.current.monthSymbols
-      return names.indices.contains(month - 1) ? "\(names[month - 1]) \(year)" : String(year)
+      let calendar = Calendar.current
+      guard let first = calendar.date(from: DateComponents(year: year, month: month, day: 1)) else {
+        return String(year)
+      }
+      // The template lets each language put the month and year its own way.
+      let format = DateFormatter()
+      format.locale = .current
+      format.setLocalizedDateFormatFromTemplate("LLLLy")
+      return format.string(from: first).capitalized(with: .current)
     }
   }
 }
@@ -590,17 +598,21 @@ struct SelectionBar: View {
 
   var body: some View {
     VStack(spacing: 6) {
-      Text(count == 0 ? "Tap or slide across items" : "\(bytes.formatted(.byteCount(style: .file))) selected")
+      Text(
+        count == 0
+          ? String(localized: "Tap or slide across items")
+          : String(localized: "\(bytes.formatted(.byteCount(style: .file))) selected")
+      )
         .font(.footnote.weight(.semibold).monospacedDigit())
         .foregroundStyle(.secondary)
       ActionBar {
-        ActionButton("Delete", symbol: "trash", tint: .red, spoken: "Delete without a copy") {
+        ActionButton("Delete", symbol: "trash", tint: .red, spoken: String(localized: "Delete without a copy")) {
           act(.delete)
         }
-        ActionButton("Copy", symbol: "doc.on.doc", tint: .primary, spoken: "Copy to \(cloud)") {
+        ActionButton("Copy", symbol: "doc.on.doc", tint: .primary, spoken: String(localized: "Copy to \(cloud)")) {
           act(.copy)
         }
-        ActionButton("Move", symbol: "icloud.and.arrow.up.fill", spoken: "Move to \(cloud)") {
+        ActionButton("Move", symbol: "icloud.and.arrow.up.fill", spoken: String(localized: "Move to \(cloud)")) {
           act(.move)
         }
       }
@@ -611,7 +623,7 @@ struct SelectionBar: View {
     .padding(.bottom, 4)
     .background(.bar)
     .accessibilityElement(children: .contain)
-    .accessibilityLabel("Actions for \(count) selected items, to \(cloud)")
+    .accessibilityLabel(String(localized: "Actions for the selection, to \(cloud)"))
   }
 }
 
@@ -625,7 +637,9 @@ struct AccountButton: View {
       Image(systemName: clouds.connected ? "person.crop.circle.badge.checkmark" : "person.crop.circle.badge.exclamationmark")
         .symbolRenderingMode(.hierarchical)
     }
-    .accessibilityLabel(clouds.connected ? "Clouds and accounts" : "Connect a cloud")
+    .accessibilityLabel(
+      clouds.connected ? String(localized: "Clouds and accounts") : String(localized: "Connect a cloud")
+    )
   }
 }
 

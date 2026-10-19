@@ -212,14 +212,14 @@ struct PhotoBin: Sendable {
 /// The user answered iOS's question about deleting with "Don't Allow".
 struct DeletionDeclined: LocalizedError {
   var errorDescription: String? {
-    "you chose not to delete"
+    String(localized: "you chose not to delete")
   }
 }
 
 /// The photo library no longer has the asset.
 struct MissingOriginal: LocalizedError {
   var errorDescription: String? {
-    "This item is no longer in the photo library"
+    String(localized: "This item is no longer in the photo library")
   }
 }
 
@@ -236,8 +236,8 @@ struct NoRoomForCopy: LocalizedError {
   }
 
   var errorDescription: String? {
-    "\(name) has to be copied before upload and needs "
-      + "\(needed.formatted(.byteCount(style: .file))), but this iPhone has only "
-      + "\(free.formatted(.byteCount(style: .file))) free"
+    String(
+      localized: "\(name) has to be copied before upload and needs \(needed.formatted(.byteCount(style: .file))), but this iPhone has only \(free.formatted(.byteCount(style: .file))) free"
+    )
   }
 }

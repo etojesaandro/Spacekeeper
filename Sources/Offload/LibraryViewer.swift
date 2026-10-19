@@ -62,14 +62,14 @@ struct LibraryViewer: View {
           .foregroundStyle(.secondary)
           .frame(maxWidth: .infinity, minHeight: 44)
       } else {
-        ActionButton("Delete", symbol: "trash", tint: .red, spoken: "Delete without a copy") {
+        ActionButton("Delete", symbol: "trash", tint: .red, spoken: String(localized: "Delete without a copy")) {
           dismiss()
           act(.delete, item)
         }
-        ActionButton("Copy", symbol: "doc.on.doc", tint: .primary, spoken: "Copy to \(cloud)") {
+        ActionButton("Copy", symbol: "doc.on.doc", tint: .primary, spoken: String(localized: "Copy to \(cloud)")) {
           act(.copy, item)
         }
-        ActionButton("Move", symbol: "icloud.and.arrow.up.fill", spoken: "Move to \(cloud)") {
+        ActionButton("Move", symbol: "icloud.and.arrow.up.fill", spoken: String(localized: "Move to \(cloud)")) {
           act(.move, item)
         }
       }
@@ -79,27 +79,27 @@ struct LibraryViewer: View {
 
   private func facts(_ item: MediaItem) -> [Fact] {
     var facts = [
-      Fact(name: "Kind", value: item.video ? "Video" : "Photo"),
-      Fact(name: "File", value: item.name),
-      Fact(name: "Taken", value: item.created.formatted(date: .long, time: .shortened)),
-      Fact(name: "Size", value: item.bytes().formatted(.byteCount(style: .file))),
+      Fact(name: String(localized: "Kind"), value: item.video ? String(localized: "Video") : String(localized: "Photo")),
+      Fact(name: String(localized: "File"), value: item.name),
+      Fact(name: String(localized: "Taken"), value: item.created.formatted(date: .long, time: .shortened)),
+      Fact(name: String(localized: "Size"), value: item.bytes().formatted(.byteCount(style: .file))),
     ]
     if item.video {
       facts.append(
         Fact(
-          name: "Length",
+          name: String(localized: "Length"),
           value: Duration.seconds(item.seconds.rounded()).formatted(.time(pattern: .minuteSecond))
         )
       )
     }
     facts.append(
       Fact(
-        name: "On this iPhone",
+        name: String(localized: "On this iPhone"),
         value: item.onDevice() >= item.bytes()
-          ? "Yes"
+          ? String(localized: "Yes")
           : item.onDevice() == 0
-            ? "No, only in iCloud"
-            : "\(item.onDevice().formatted(.byteCount(style: .file))) of it"
+            ? String(localized: "No, only in iCloud")
+            : String(localized: "\(item.onDevice().formatted(.byteCount(style: .file))) of it")
       )
     )
     return facts

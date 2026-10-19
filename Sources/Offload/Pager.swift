@@ -292,7 +292,7 @@ struct ActionBar<Content: View>: View {
 
 /// One action of an action bar.
 struct ActionButton: View {
-  private let title: String
+  private let title: LocalizedStringKey
   private let symbol: String
   private let tint: Color
   private let spoken: String
@@ -306,7 +306,7 @@ struct ActionButton: View {
   ///   - spoken: What VoiceOver says, when the word alone is too short.
   ///   - action: What the button does.
   init(
-    _ title: String,
+    _ title: LocalizedStringKey,
     symbol: String,
     tint: Color = .accentColor,
     spoken: String = "",
@@ -315,7 +315,7 @@ struct ActionButton: View {
     self.title = title
     self.symbol = symbol
     self.tint = tint
-    self.spoken = spoken.isEmpty ? title : spoken
+    self.spoken = spoken
     self.action = action
   }
 
@@ -334,6 +334,6 @@ struct ActionButton: View {
       .contentShape(Rectangle())
     }
     .buttonStyle(.plain)
-    .accessibilityLabel(spoken)
+    .accessibilityLabel(spoken.isEmpty ? Text(title) : Text(verbatim: spoken))
   }
 }
