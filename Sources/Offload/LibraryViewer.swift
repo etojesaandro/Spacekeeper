@@ -52,6 +52,12 @@ struct LibraryViewer: View {
       },
       info: facts
     )
+    .onAppear {
+      Loudspeaker().open()
+    }
+    .onDisappear {
+      Loudspeaker().close()
+    }
   }
 
   @ViewBuilder private func actions(for item: MediaItem, inform: @escaping () -> Void) -> some View {
@@ -233,4 +239,22 @@ enum Deed {
 
   /// Delete from this iPhone without a copy.
   case delete
+}
+
+/// The phone's sound while the user watches: on even with the switch set to silent, as in Photos.
+///
+/// Someone who opens a video means to hear it. While the viewer is open the
+/// app plays like a video player; once it closes, other apps' sound, such as
+/// music that was paused, comes back.
+struct Loudspeaker {
+  func open() {
+    let session = AVAudioSession.sharedInstance()
+    // Failing only leaves the sound to follow the switch, as before.
+    try? session.setCategory(.playback, mode: .moviePlayback)
+    try? session.setActive(true)
+  }
+
+  func close() {
+    try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+  }
 }
