@@ -5,23 +5,19 @@ import PackageDescription
 // Everything in this package is free of Apple-only frameworks,
 // so it builds and runs its tests on Linux as well as on iOS.
 let package = Package(
-  name: "OffloadCore",
+  name: "SpacekeeperCore",
   platforms: [
     .iOS(.v17),
     .macOS(.v14),
   ],
   products: [
     .library(
-      name: "OffloadCore",
-      targets: ["OffloadCore"]
+      name: "SpacekeeperCore",
+      targets: ["SpacekeeperCore"]
     ),
     .executable(
-      name: "offload-probe",
-      targets: ["OffloadProbe"]
-    ),
-    .executable(
-      name: "offload-backup",
-      targets: ["OffloadBackup"]
+      name: "spacekeeper-backup",
+      targets: ["SpacekeeperBackup"]
     ),
   ],
   dependencies: [
@@ -29,31 +25,27 @@ let package = Package(
   ],
   targets: [
     .target(
-      name: "OffloadCore",
+      name: "SpacekeeperCore",
       dependencies: [
         .product(name: "Crypto", package: "swift-crypto"),
       ]
     ),
-    .executableTarget(
-      name: "OffloadProbe",
-      dependencies: ["OffloadCore"]
-    ),
     // Talks to a phone over its cable on Linux, macOS and Windows alike.
     .target(
-      name: "OffloadCable",
-      dependencies: ["OffloadCore"]
+      name: "SpacekeeperCable",
+      dependencies: ["SpacekeeperCore"]
     ),
     .executableTarget(
-      name: "OffloadBackup",
-      dependencies: ["OffloadCore", "OffloadCable"]
+      name: "SpacekeeperBackup",
+      dependencies: ["SpacekeeperCore", "SpacekeeperCable"]
     ),
     .testTarget(
-      name: "OffloadCoreTests",
-      dependencies: ["OffloadCore"]
+      name: "SpacekeeperCoreTests",
+      dependencies: ["SpacekeeperCore"]
     ),
     .testTarget(
-      name: "OffloadCableTests",
-      dependencies: ["OffloadCable", "OffloadCore"]
+      name: "SpacekeeperCableTests",
+      dependencies: ["SpacekeeperCable", "SpacekeeperCore"]
     ),
   ]
 )

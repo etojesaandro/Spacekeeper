@@ -3,8 +3,8 @@
   "%@: sent %@ of %@ bytes",
   "Content-Type",
   "LLLLy",
-  "Offload",
-  "Offload.cloud",
+  "Spacekeeper",
+  "Spacekeeper.cloud",
   "application/x-www-form-urlencoded",
   "failed %@, %@: %@",
   "read %lld items in %@ s, %@ remembered"

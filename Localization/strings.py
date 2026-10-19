@@ -23,7 +23,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent
-SOURCES = ROOT.parent / "Sources" / "Offload"
+SOURCES = ROOT.parent / "Sources" / "Spacekeeper"
 LANGUAGES = ["en", "ru", "uk", "de", "es", "fr", "it", "pt-BR", "zh-Hans", "ja"]
 COUNTS = re.compile(r"(\.count|^left)$")
 SKIPPED_LINE = re.compile(r"\blog\.(notice|error|info|debug)\(|Logger\(|precondition\(|fatalError\(")

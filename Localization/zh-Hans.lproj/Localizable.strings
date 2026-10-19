@@ -68,7 +68,7 @@
 "Free up space,\nkeep every photo" = "释放空间，\n保留每张照片";
 "Getting ready" = "正在准备";
 "Google Drive" = "Google 云端硬盘";
-"Google did not allow lasting access. Remove Offload from your Google account's connected apps and try again." = "Google 未允许长期访问。请从 Google 账户的已关联应用中移除 Offload，然后重试。";
+"Google did not allow lasting access. Remove Spacekeeper from your Google account's connected apps and try again." = "Google 未允许长期访问。请从 Google 账户的已关联应用中移除 Spacekeeper，然后重试。";
 "Google returned to an unexpected address" = "Google 返回到了意外的地址";
 "How it works" = "使用方法";
 "Info" = "信息";
@@ -111,11 +111,6 @@
 "Nothing was deleted" = "未删除任何内容";
 "Nothing was deleted: %@" = "未删除任何内容：%@";
 "Nothing was uploaded" = "未上传任何内容";
-"Offload asks to see your photos next. It reads them on this iPhone only." = "接下来 Offload 会请求访问你的照片。它只在这台 iPhone 上读取照片。";
-"Offload needs to see your photos to show which ones take the most space." = "Offload 需要访问你的照片，才能显示哪些占用空间最多。";
-"Offload sees only the files it puts in the Offload folder of your Drive." = "Offload 只能看到它放入你云端硬盘 Offload 文件夹中的文件。";
-"Offload shows what takes the most room and keeps the originals safe elsewhere." = "Offload 显示最占空间的内容，并把原件安全地保存在别处。";
-"Offload weighs every photo and video once; later it only looks at what is new." = "Offload 只测量每张照片和每个视频一次，之后只查看新的内容。";
 "Oldest first" = "最早优先";
 "On this iPhone" = "在这台 iPhone 上";
 "Only in iCloud" = "仅在 iCloud 中";
@@ -149,7 +144,12 @@
 "Size sent" = "已发送大小";
 "Smallest first" = "最小优先";
 "Sort and filter" = "排序和筛选";
-"Start offload-backup on the computer" = "在电脑上启动 offload-backup";
+"Spacekeeper asks to see your photos next. It reads them on this iPhone only." = "接下来 Spacekeeper 会请求访问你的照片。它只在这台 iPhone 上读取照片。";
+"Spacekeeper needs to see your photos to show which ones take the most space." = "Spacekeeper 需要访问你的照片，才能显示哪些占用空间最多。";
+"Spacekeeper sees only the files it puts in the Spacekeeper folder of your Drive." = "Spacekeeper 只能看到它放入你云端硬盘 Spacekeeper 文件夹中的文件。";
+"Spacekeeper shows what takes the most room and keeps the originals safe elsewhere." = "Spacekeeper 显示最占空间的内容，并把原件安全地保存在别处。";
+"Spacekeeper weighs every photo and video once; later it only looks at what is new." = "Spacekeeper 只测量每张照片和每个视频一次，之后只查看新的内容。";
+"Start spacekeeper-backup on the computer" = "在电脑上启动 spacekeeper-backup";
 "Taken" = "拍摄于";
 "Tap Select, then slide your finger across pictures to pick many at once." = "轻点“选择”，然后用手指划过图片，即可一次选择多项。";
 "Tap or slide across items" = "轻点或划过项目";

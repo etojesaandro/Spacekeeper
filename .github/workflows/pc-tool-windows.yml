@@ -30,16 +30,16 @@ jobs:
 
       - name: Build
         run: |
-          swift build -c release --product offload-backup --static-swift-stdlib
+          swift build -c release --product spacekeeper-backup --static-swift-stdlib
           $static = $LASTEXITCODE -eq 0
           if (-not $static) {
             Write-Host "A static build failed; building against the Swift runtime instead."
-            swift build -c release --product offload-backup
+            swift build -c release --product spacekeeper-backup
             if ($LASTEXITCODE -ne 0) { exit 1 }
           }
           $bin = swift build -c release --show-bin-path
           New-Item -ItemType Directory -Force dist | Out-Null
-          Copy-Item "$bin\offload-backup.exe" dist\
+          Copy-Item "$bin\spacekeeper-backup.exe" dist\
           if (-not $static) {
             # The runtime lies where swiftCore.dll is found; all of it goes along.
             $runtime = Split-Path (Get-Command swiftCore.dll).Source
@@ -50,14 +50,14 @@ jobs:
       - name: Check that it starts without Swift installed
         run: |
           $env:Path = "C:\Windows\System32;C:\Windows"
-          .\dist\offload-backup.exe --help
+          .\dist\spacekeeper-backup.exe --help
           # An unknown option makes it print how to use it and end with 2.
           if ($LASTEXITCODE -ne 2) { exit 1 }
           exit 0
 
       - uses: actions/upload-artifact@v4
         with:
-          name: offload-backup-windows
+          name: spacekeeper-backup-windows
           path: Core/dist/
 
       - name: Test

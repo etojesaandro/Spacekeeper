@@ -1,5 +1,5 @@
 version: 1
-bundleID: com.example.Offload
+bundleID: com.saa.spacekeeper
 infoPath: Info.plist
 # Translations, one folder per language; Localization/strings.py writes them.
 resources:

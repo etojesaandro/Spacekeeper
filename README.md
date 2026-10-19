@@ -1,13 +1,13 @@
-# Offload
+# Spacekeeper
 
 Free up space on your iPhone without losing a single photo.
 
-Offload lists every photo and video with its size, biggest first, and moves
+Spacekeeper lists every photo and video with its size, biggest first, and moves
 the ones you choose to a place that keeps them: Yandex Disk, Google Drive, or
 a computer over the cable. An original leaves the iPhone only after its copy
 has been checked byte for byte, and iOS still asks before anything is deleted.
 
-> "Offload" is a working name; the App Store name is still to be chosen.
+> "Spacekeeper" is a working name; the App Store name is still to be chosen.
 
 ## What it does
 
@@ -29,9 +29,9 @@ access is limited to the files the app creates.
 
 | Path | What it is |
 |---|---|
-| `Sources/Offload` | The iOS app (SwiftUI, PhotoKit) |
+| `Sources/Spacekeeper` | The iOS app (SwiftUI, PhotoKit) |
 | `Core` | Everything that does not need iOS: clouds, upload queue, backup, cable protocol; tested on Linux |
-| `Core/Sources/OffloadBackup` | `offload-backup`, the computer side of the cable backup |
+| `Core/Sources/SpacekeeperBackup` | `spacekeeper-backup`, the computer side of the cable backup |
 | `Localization` | Translations and `strings.py`, which builds and checks them |
 
 ## Building
@@ -47,11 +47,11 @@ xtool dev run                  # build, sign and install on a plugged-in iPhone
 The computer tool:
 
 ```sh
-cd Core && swift build -c release --product offload-backup
+cd Core && swift build -c release --product spacekeeper-backup
 Core/Scripts/pc-tool-builds.sh # Linux and both Mac builds; Windows builds on GitHub Actions
 ```
 
-On the iPhone open the Backup tab, then on the computer run `offload-backup`
+On the iPhone open the Backup tab, then on the computer run `spacekeeper-backup`
 (optionally followed by a folder) and type the code the phone shows. It needs
 Apple's cable service: built into macOS, part of Apple Devices or iTunes on
 Windows, the `usbmuxd` package on Linux.

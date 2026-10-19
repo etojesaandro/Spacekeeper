@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Offload",
+    name: "Spacekeeper",
     platforms: [
         .iOS(.v17),
         .macOS(.v14),
@@ -12,8 +12,8 @@ let package = Package(
         // An xtool project should contain exactly one library product,
         // representing the main app.
         .library(
-            name: "Offload",
-            targets: ["Offload"]
+            name: "Spacekeeper",
+            targets: ["Spacekeeper"]
         ),
     ],
     dependencies: [
@@ -21,9 +21,9 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "Offload",
+            name: "Spacekeeper",
             dependencies: [
-                .product(name: "OffloadCore", package: "Core"),
+                .product(name: "SpacekeeperCore", package: "Core"),
             ]
         ),
     ]

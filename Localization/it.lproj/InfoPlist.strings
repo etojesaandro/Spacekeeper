@@ -1,2 +1,2 @@
-"CFBundleDisplayName" = "Offload";
-"NSPhotoLibraryUsageDescription" = "Offload legge foto e video per mostrare quali occupano più spazio e rimuove quelli che sposti nel tuo cloud.";
+"CFBundleDisplayName" = "Spacekeeper";
+"NSPhotoLibraryUsageDescription" = "Spacekeeper legge foto e video per mostrare quali occupano più spazio e rimuove quelli che sposti nel tuo cloud.";

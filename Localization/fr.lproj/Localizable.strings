@@ -68,7 +68,7 @@
 "Free up space,\nkeep every photo" = "Libérez de l’espace,\ngardez chaque photo";
 "Getting ready" = "Préparation";
 "Google Drive" = "Google Drive";
-"Google did not allow lasting access. Remove Offload from your Google account's connected apps and try again." = "Google n’a pas autorisé d’accès durable. Retirez Offload des applications connectées de votre compte Google et réessayez.";
+"Google did not allow lasting access. Remove Spacekeeper from your Google account's connected apps and try again." = "Google n’a pas autorisé d’accès durable. Retirez Spacekeeper des applications connectées de votre compte Google et réessayez.";
 "Google returned to an unexpected address" = "Google est revenu à une adresse inattendue";
 "How it works" = "Comment ça marche";
 "Info" = "Infos";
@@ -111,11 +111,6 @@
 "Nothing was deleted" = "Rien n’a été supprimé";
 "Nothing was deleted: %@" = "Rien n’a été supprimé : %@";
 "Nothing was uploaded" = "Rien n’a été envoyé";
-"Offload asks to see your photos next. It reads them on this iPhone only." = "Offload demande ensuite à voir vos photos. Il les lit uniquement sur cet iPhone.";
-"Offload needs to see your photos to show which ones take the most space." = "Offload doit voir vos photos pour montrer celles qui prennent le plus de place.";
-"Offload sees only the files it puts in the Offload folder of your Drive." = "Offload ne voit que les fichiers qu’il place dans le dossier Offload de votre Drive.";
-"Offload shows what takes the most room and keeps the originals safe elsewhere." = "Offload montre ce qui prend le plus de place et garde les originaux en sécurité ailleurs.";
-"Offload weighs every photo and video once; later it only looks at what is new." = "Offload pèse chaque photo et vidéo une fois ; ensuite, il ne regarde que les nouveautés.";
 "Oldest first" = "Plus anciens d’abord";
 "On this iPhone" = "Sur cet iPhone";
 "Only in iCloud" = "Uniquement dans iCloud";
@@ -149,7 +144,12 @@
 "Size sent" = "Taille envoyée";
 "Smallest first" = "Plus petits d’abord";
 "Sort and filter" = "Trier et filtrer";
-"Start offload-backup on the computer" = "Lancez offload-backup sur l’ordinateur";
+"Spacekeeper asks to see your photos next. It reads them on this iPhone only." = "Spacekeeper demande ensuite à voir vos photos. Il les lit uniquement sur cet iPhone.";
+"Spacekeeper needs to see your photos to show which ones take the most space." = "Spacekeeper doit voir vos photos pour montrer celles qui prennent le plus de place.";
+"Spacekeeper sees only the files it puts in the Spacekeeper folder of your Drive." = "Spacekeeper ne voit que les fichiers qu’il place dans le dossier Spacekeeper de votre Drive.";
+"Spacekeeper shows what takes the most room and keeps the originals safe elsewhere." = "Spacekeeper montre ce qui prend le plus de place et garde les originaux en sécurité ailleurs.";
+"Spacekeeper weighs every photo and video once; later it only looks at what is new." = "Spacekeeper pèse chaque photo et vidéo une fois ; ensuite, il ne regarde que les nouveautés.";
+"Start spacekeeper-backup on the computer" = "Lancez spacekeeper-backup sur l’ordinateur";
 "Taken" = "Prise le";
 "Tap Select, then slide your finger across pictures to pick many at once." = "Touchez Sélectionner, puis faites glisser le doigt sur les images pour en choisir plusieurs d’un coup.";
 "Tap or slide across items" = "Touchez ou glissez sur les éléments";

@@ -18,8 +18,8 @@
         <string>ja</string>
     </array>
     <key>CFBundleDisplayName</key>
-    <string>Offload</string>
+    <string>Spacekeeper</string>
     <key>NSPhotoLibraryUsageDescription</key>
-    <string>Offload reads your photos and videos to show which ones take the most space, and removes the ones you move to your cloud.</string>
+    <string>Spacekeeper reads your photos and videos to show which ones take the most space, and removes the ones you move to your cloud.</string>
 </dict>
 </plist>

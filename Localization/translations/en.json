@@ -64,8 +64,8 @@
   "one": "%lld item",
   "other": "%lld items"
  },
- "Info:CFBundleDisplayName": "Offload",
- "Info:NSPhotoLibraryUsageDescription": "Offload reads your photos and videos to show which ones take the most space, and removes the ones you move to your cloud.",
+ "Info:CFBundleDisplayName": "Spacekeeper",
+ "Info:NSPhotoLibraryUsageDescription": "Spacekeeper reads your photos and videos to show which ones take the most space, and removes the ones you move to your cloud.",
  "Move %lld items": {
   "format": "Move %#@n@",
   "one": "%lld item",

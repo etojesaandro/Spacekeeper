@@ -68,7 +68,7 @@
 "Free up space,\nkeep every photo" = "Звільніть місце,\nзберігши кожне фото";
 "Getting ready" = "Підготовка";
 "Google Drive" = "Google Диск";
-"Google did not allow lasting access. Remove Offload from your Google account's connected apps and try again." = "Google не надав постійного доступу. Видаліть Offload з під’єднаних програм в обліковому записі Google і спробуйте знову.";
+"Google did not allow lasting access. Remove Spacekeeper from your Google account's connected apps and try again." = "Google не надав постійного доступу. Видаліть Spacekeeper з під’єднаних програм в обліковому записі Google і спробуйте знову.";
 "Google returned to an unexpected address" = "Google повернув на неочікувану адресу";
 "How it works" = "Як це працює";
 "Info" = "Інфо";
@@ -111,11 +111,6 @@
 "Nothing was deleted" = "Нічого не видалено";
 "Nothing was deleted: %@" = "Нічого не видалено: %@";
 "Nothing was uploaded" = "Нічого не вивантажено";
-"Offload asks to see your photos next. It reads them on this iPhone only." = "Далі Offload попросить доступ до фото. Він читає їх лише на цьому iPhone.";
-"Offload needs to see your photos to show which ones take the most space." = "Offload потрібен доступ до фото, щоб показати, які займають найбільше місця.";
-"Offload sees only the files it puts in the Offload folder of your Drive." = "Offload бачить лише файли, які сам кладе в теку Offload на вашому Диску.";
-"Offload shows what takes the most room and keeps the originals safe elsewhere." = "Offload показує, що займає найбільше місця, і надійно зберігає оригінали деінде.";
-"Offload weighs every photo and video once; later it only looks at what is new." = "Offload один раз вимірює кожне фото й відео; далі дивиться лише нове.";
 "Oldest first" = "Спершу старі";
 "On this iPhone" = "На цьому iPhone";
 "Only in iCloud" = "Лише в iCloud";
@@ -149,7 +144,12 @@
 "Size sent" = "Надіслано даних";
 "Smallest first" = "Спершу малі";
 "Sort and filter" = "Сортування й фільтр";
-"Start offload-backup on the computer" = "Запустіть offload-backup на комп’ютері";
+"Spacekeeper asks to see your photos next. It reads them on this iPhone only." = "Далі Spacekeeper попросить доступ до фото. Він читає їх лише на цьому iPhone.";
+"Spacekeeper needs to see your photos to show which ones take the most space." = "Spacekeeper потрібен доступ до фото, щоб показати, які займають найбільше місця.";
+"Spacekeeper sees only the files it puts in the Spacekeeper folder of your Drive." = "Spacekeeper бачить лише файли, які сам кладе в теку Spacekeeper на вашому Диску.";
+"Spacekeeper shows what takes the most room and keeps the originals safe elsewhere." = "Spacekeeper показує, що займає найбільше місця, і надійно зберігає оригінали деінде.";
+"Spacekeeper weighs every photo and video once; later it only looks at what is new." = "Spacekeeper один раз вимірює кожне фото й відео; далі дивиться лише нове.";
+"Start spacekeeper-backup on the computer" = "Запустіть spacekeeper-backup на комп’ютері";
 "Taken" = "Знято";
 "Tap Select, then slide your finger across pictures to pick many at once." = "Торкніть «Вибрати» й проведіть пальцем по знімках, щоб вибрати багато одразу.";
 "Tap or slide across items" = "Торкніть або проведіть по об’єктах";

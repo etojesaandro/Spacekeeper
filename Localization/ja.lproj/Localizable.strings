@@ -68,7 +68,7 @@
 "Free up space,\nkeep every photo" = "容量を空けて、\nすべての写真を残す";
 "Getting ready" = "準備中";
 "Google Drive" = "Google ドライブ";
-"Google did not allow lasting access. Remove Offload from your Google account's connected apps and try again." = "Google が継続的なアクセスを許可しませんでした。Google アカウントの接続済みアプリから Offload を削除して、もう一度お試しください。";
+"Google did not allow lasting access. Remove Spacekeeper from your Google account's connected apps and try again." = "Google が継続的なアクセスを許可しませんでした。Google アカウントの接続済みアプリから Spacekeeper を削除して、もう一度お試しください。";
 "Google returned to an unexpected address" = "Google が予期しないアドレスに戻りました";
 "How it works" = "使い方";
 "Info" = "情報";
@@ -111,11 +111,6 @@
 "Nothing was deleted" = "何も削除されませんでした";
 "Nothing was deleted: %@" = "何も削除されませんでした：%@";
 "Nothing was uploaded" = "何もアップロードされませんでした";
-"Offload asks to see your photos next. It reads them on this iPhone only." = "次に Offload が写真へのアクセスを求めます。写真はこの iPhone 上でのみ読み取ります。";
-"Offload needs to see your photos to show which ones take the most space." = "容量を最も使っている写真を表示するには、Offload が写真にアクセスする必要があります。";
-"Offload sees only the files it puts in the Offload folder of your Drive." = "Offload が見られるのは、ドライブの Offload フォルダに自分で入れたファイルだけです。";
-"Offload shows what takes the most room and keeps the originals safe elsewhere." = "Offload は容量を最も使っているものを表示し、オリジナルを別の場所に安全に保管します。";
-"Offload weighs every photo and video once; later it only looks at what is new." = "Offload は写真とビデオのサイズを一度だけ測り、その後は新しいものだけを確認します。";
 "Oldest first" = "古い順";
 "On this iPhone" = "この iPhone 上";
 "Only in iCloud" = "iCloud のみ";
@@ -149,7 +144,12 @@
 "Size sent" = "送信サイズ";
 "Smallest first" = "小さい順";
 "Sort and filter" = "並べ替えとフィルタ";
-"Start offload-backup on the computer" = "コンピュータで offload-backup を起動";
+"Spacekeeper asks to see your photos next. It reads them on this iPhone only." = "次に Spacekeeper が写真へのアクセスを求めます。写真はこの iPhone 上でのみ読み取ります。";
+"Spacekeeper needs to see your photos to show which ones take the most space." = "容量を最も使っている写真を表示するには、Spacekeeper が写真にアクセスする必要があります。";
+"Spacekeeper sees only the files it puts in the Spacekeeper folder of your Drive." = "Spacekeeper が見られるのは、ドライブの Spacekeeper フォルダに自分で入れたファイルだけです。";
+"Spacekeeper shows what takes the most room and keeps the originals safe elsewhere." = "Spacekeeper は容量を最も使っているものを表示し、オリジナルを別の場所に安全に保管します。";
+"Spacekeeper weighs every photo and video once; later it only looks at what is new." = "Spacekeeper は写真とビデオのサイズを一度だけ測り、その後は新しいものだけを確認します。";
+"Start spacekeeper-backup on the computer" = "コンピュータで spacekeeper-backup を起動";
 "Taken" = "撮影日";
 "Tap Select, then slide your finger across pictures to pick many at once." = "「選択」をタップして写真の上を指でなぞると、まとめて選べます。";
 "Tap or slide across items" = "項目をタップするかなぞってください";
