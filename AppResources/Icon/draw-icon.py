@@ -2,6 +2,10 @@
 """Draws Spacekeeper's app icon: a white shield holding a photo, on a blue-to-teal sky.
 
   python3 -I AppResources/Icon/draw-icon.py AppResources/Icon/AppIcon.png
+  cp AppResources/Icon/AppIcon.png AppResources/Assets.xcassets/AppIcon.appiconset/
+
+xtool shows the first file on the home screen; Xcode builds the App Store icon from
+the copy in the asset catalog.
 
 iOS rounds the corners itself, so the picture fills the whole square, and the
 App Store wants no transparency, so the file is plain RGB.

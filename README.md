@@ -57,6 +57,8 @@ On the iPhone open the Backup tab, then on the computer run `spacekeeper-backup`
 Apple's cable service: built into macOS, part of Apple Devices or iTunes on
 Windows, the `usbmuxd` package on Linux.
 
+App Store builds are made with Xcode on a Mac: see [RELEASING.md](RELEASING.md).
+
 ## Translations
 
 English text is the key. After changing a text in the code, add it to every
